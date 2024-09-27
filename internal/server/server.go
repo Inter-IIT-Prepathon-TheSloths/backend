@@ -1,9 +1,11 @@
 package server
 
 import (
+	"fmt"
 	"log"
 	"net/http"
 
+	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/routes"
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/utils"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
@@ -14,9 +16,12 @@ func customHTTPErrorHandler(err error, c echo.Context) {
 	code := http.StatusInternalServerError
 	msg := "Internal Server Error"
 
-	if he, ok := err.(*echo.HTTPError); ok {
+	he, ok := err.(*echo.HTTPError)
+	fmt.Println(he, ok)
+	if ok {
 		code = he.Code
 		msg = he.Message.(string)
+		fmt.Println("Some", err)
 	}
 
 	log.Printf("Error: %v", err)
@@ -30,6 +35,11 @@ func NewServer(client *mongo.Client) *echo.Echo {
 
 	// Register user routes
 	e.GET("/", HealthCheck(client))
+
+	api := e.Group("/api/v1")
+	userRouter := api.Group("/users")
+
+	routes.RegisterUserRoutes(userRouter, client)
 
 	e.HTTPErrorHandler = customHTTPErrorHandler
 

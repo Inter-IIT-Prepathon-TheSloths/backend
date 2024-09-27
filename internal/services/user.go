@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"time"
 
@@ -17,29 +18,41 @@ type UserService struct {
 }
 
 func NewUserService(client *mongo.Client) *UserService {
-	return &UserService{client: client}
+	return &UserService{
+		client: client,
+	}
 }
 
 func (s *UserService) getCollection() *mongo.Collection {
 	return s.client.Database(os.Getenv("DB_NAME")).Collection("users")
 }
 
-func (s *UserService) CreateUser(ctx context.Context, user *models.User) error {
+func (s *UserService) CreateUser(ctx context.Context, user *models.User) (string, error) {
+	fmt.Println("Userrrr", user)
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
 
-	_, err := s.getCollection().InsertOne(ctx, user)
-	return err
+	insertedDoc, err := s.getCollection().InsertOne(ctx, user)
+	if err != nil {
+		return "", err
+	}
+	objectId, ok := insertedDoc.InsertedID.(primitive.ObjectID)
+	if !ok {
+		return "", fmt.Errorf("InsertedID is not of type primitive.ObjectID")
+	}
+	return objectId.Hex(), err
 }
 
 func (s *UserService) GetAllUsers(ctx context.Context) ([]models.User, error) {
-	cur, err := s.getCollection().Find(ctx, nil)
+	cur, err := s.getCollection().Find(ctx, bson.D{})
 	if err != nil {
 		return nil, err
 	}
 	defer cur.Close(ctx)
 
 	var users []models.User
+	// fmt.Println("Users", users)
+
 	for cur.Next(ctx) {
 		var user models.User
 		err := cur.Decode(&user)
@@ -56,17 +69,14 @@ func (s *UserService) GetAllUsers(ctx context.Context) ([]models.User, error) {
 	return users, nil
 }
 
-func (s *UserService) GetUserByID(ctx context.Context, id string) (*models.User, error) {
-	oid, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, err
-	}
-
-	filter := bson.M{"_id": oid}
+func (s *UserService) GetUser(ctx context.Context, filter bson.M) (*models.User, error) {
 	var user models.User
-	err = s.getCollection().FindOne(ctx, filter).Decode(&user)
+	err := s.getCollection().FindOne(ctx, filter).Decode(&user)
+	if err == mongo.ErrNoDocuments {
+		return nil, nil
+	}
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("error Decoding User Doc")
 	}
 
 	return &user, nil

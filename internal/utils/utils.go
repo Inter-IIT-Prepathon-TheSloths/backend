@@ -2,13 +2,18 @@ package utils
 
 import (
 	"context"
+	"crypto/rand"
+	"encoding/base64"
 	"fmt"
 	"log"
+	"net/http"
 	"os"
 	"time"
 
+	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt"
 	_ "github.com/joho/godotenv/autoload"
+	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -60,7 +65,6 @@ func VerifyToken(tokenString string) (*jwt.Token, error) {
 }
 
 func HashPassword(password string) (string, error) {
-	// Hash the password with a cost of 10
 	hashedPassword, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		return "", err
@@ -70,4 +74,24 @@ func HashPassword(password string) (string, error) {
 
 func VerifyPassword(hashedPassword, plainPassword string) error {
 	return bcrypt.CompareHashAndPassword([]byte(hashedPassword), []byte(plainPassword))
+}
+
+func GenerateState() (string, error) {
+	b := make([]byte, 16) // 16 bytes == 128 bits
+	if _, err := rand.Read(b); err != nil {
+		return "", err
+	}
+	return base64.URLEncoding.EncodeToString(b), nil
+}
+
+func Validate(s interface{}) error {
+	validate := validator.New()
+	err := validate.Struct(s)
+
+	if err != nil {
+		for _, err := range err.(validator.ValidationErrors) {
+			return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Validation failed for field '%s', violating '%s' condition\n", err.Field(), err.Tag()))
+		}
+	}
+	return nil
 }

@@ -30,6 +30,7 @@ func customHTTPErrorHandler(err error, c echo.Context) {
 
 func NewServer(client *mongo.Client) *echo.Echo {
 	e := echo.New()
+	e.Use(middleware.CORS())
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
@@ -37,9 +38,9 @@ func NewServer(client *mongo.Client) *echo.Echo {
 	e.GET("/", HealthCheck(client))
 
 	api := e.Group("/api/v1")
-	userRouter := api.Group("/users")
+	authRouter := api.Group("/auth")
 
-	routes.RegisterUserRoutes(userRouter, client)
+	routes.RegisterUserRoutes(authRouter, client)
 
 	e.HTTPErrorHandler = customHTTPErrorHandler
 

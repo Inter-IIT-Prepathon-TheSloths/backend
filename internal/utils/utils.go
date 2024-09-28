@@ -61,12 +61,16 @@ func GetEmailBody(email string, emails []models.Email) models.Email {
 	return models.Email{}
 }
 
-func ConstructEmailFilter(email string) bson.M {
+func ConstructEmailFilter(emails []models.Email) bson.M {
+	var emailList []string
+
+	for _, email := range emails {
+		emailList = append(emailList, email.Email)
+	}
+
 	filter := bson.M{
-		"emails": bson.M{
-			"$elemMatch": bson.M{
-				"email": email,
-			},
+		"emails.email": bson.M{
+			"$in": emailList,
 		},
 	}
 	return filter
@@ -105,7 +109,7 @@ func SendVerificationCode(code, email string) error {
 	info1 := "To activate your email, please use the given OTP. Don't share with anyone :)"
 	link := ""
 	button_text := code
-	time_duration := "1 day"
+	time_duration := "3 Minutes"
 	regenerate_link := os.Getenv("BACKEND_URL") + "/api/v1/auth/resend_code?email=" + email
 
 	err := SendEmail([]string{email}, subject, heading, info1, link, button_text, time_duration, regenerate_link)

@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"time"
 
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/models"
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/utils"
@@ -25,7 +26,9 @@ func (uc *UserController) SignUp(c echo.Context) error {
 	}
 
 	// Get the user with the given email
-	filter := utils.ConstructEmailFilter(userDetails.Email)
+	filter := utils.ConstructEmailFilter([]models.Email{
+		{Email: userDetails.Email, IsVerified: true},
+	})
 	existingUser, err := uc.service.GetUser(c.Request().Context(), filter)
 	if err != nil {
 		return err
@@ -45,7 +48,13 @@ func (uc *UserController) SignUp(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-	err = uc.service.CreateSignup(c.Request().Context(), userDetails.Email, code, hashedPassword)
+	signup := &models.Signup{
+		Email:     userDetails.Email,
+		Code:      code,
+		Password:  hashedPassword,
+		ExpiresAt: time.Now().Add(3 * time.Minute),
+	}
+	err = uc.service.UpdateSignup(c.Request().Context(), userDetails.Email, signup)
 	if err != nil {
 		return err
 	}
@@ -65,7 +74,9 @@ func (uc *UserController) Login(c echo.Context) error {
 		return err
 	}
 
-	filter := utils.ConstructEmailFilter(userDetails.Email)
+	filter := utils.ConstructEmailFilter([]models.Email{
+		{Email: userDetails.Email, IsVerified: true},
+	})
 	existingUser, err := uc.service.GetUser(c.Request().Context(), filter)
 	if err != nil {
 		return err

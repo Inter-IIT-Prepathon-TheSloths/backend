@@ -12,8 +12,8 @@ func RegisterUserRoutes(e *echo.Group, client *mongo.Client) {
 
 	e.POST("/signup", userController.SignUp)
 	e.POST("/login", userController.Login)
-	e.GET("/google", userController.GoogleAuthController)
-	e.GET("/callback/google", userController.CallbackGoogle)
+	e.GET("/oauth/:provider", userController.AuthController)
+	e.GET("/callback/:provider", userController.Callback)
 	e.POST("/create_password", userController.CreatePassword)
 	e.GET("/verify_email", userController.VerifyEmail)
 	e.GET("/resend_code", userController.SendVerificationCode)

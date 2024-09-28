@@ -8,6 +8,7 @@ import (
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 func (s *UserService) CreateSignup(ctx context.Context, email, code, password string) error {
@@ -38,7 +39,9 @@ func (s *UserService) GetSignup(ctx context.Context, email string) (*models.Sign
 func (s *UserService) UpdateSignup(ctx context.Context, email string, signup *models.Signup) error {
 	filter := bson.M{"email": email}
 	update := bson.M{"$set": signup}
-	_, err := s.getSignupsCollection().UpdateOne(ctx, filter, update)
+
+	opts := options.Update().SetUpsert(true)
+	_, err := s.getSignupsCollection().UpdateOne(ctx, filter, update, opts)
 	return err
 }
 

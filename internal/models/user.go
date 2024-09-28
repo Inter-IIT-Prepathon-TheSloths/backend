@@ -10,7 +10,7 @@ type User struct {
 	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
 	Name      string             `bson:"name" json:"name"`
 	Emails    []Email            `bson:"emails" validate:"required,dive,required,dive,email" json:"emails"`
-	Password  string             `bson:"password,omitempty" validate:"required,min=6" json:"-"`
+	Password  string             `bson:"password,omitempty" json:"-"`
 	Picture   string             `bson:"picture,omitempty" json:"picture"`
 	CreatedAt time.Time          `bson:"created_at" json:"-"`
 	UpdatedAt time.Time          `bson:"updated_at" json:"-"`
@@ -41,4 +41,11 @@ type GoogleUserDetails struct {
 type UserPassword struct {
 	ID       string `json:"id"`
 	Password string `json:"password" validate:"required,min=6"`
+}
+
+type Signup struct {
+	Email     string    `bson:"email" json:"email"`
+	Password  string    `bson:"password" json:"password"`
+	Code      string    `bson:"code" json:"code"`
+	ExpiresAt time.Time `bson:"expires_at"`
 }

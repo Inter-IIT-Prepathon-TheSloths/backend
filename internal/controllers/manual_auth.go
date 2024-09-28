@@ -13,46 +13,50 @@ import (
 func (uc *UserController) SignUp(c echo.Context) error {
 	var userDetails models.LoginUserDetails
 
+	// Reading user details from request body
 	if err := c.Bind(&userDetails); err != nil {
 		return err
 	}
 
+	// Validating email and password
 	validation_err := utils.Validate(userDetails)
 	if validation_err != nil {
 		return validation_err
 	}
 
+	// Get the user with the given email
 	filter := utils.ConstructEmailFilter(userDetails.Email)
 	existingUser, err := uc.service.GetUser(c.Request().Context(), filter)
 	if err != nil {
 		return err
 	}
-
 	if existingUser != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Email already registered")
 	}
 
+	// hash the password
 	hashedPassword, err := utils.HashPassword(userDetails.Password)
 	if err != nil {
 		return err
 	}
 
-	user := &models.User{
-		Emails:   []models.Email{{Email: userDetails.Email, IsVerified: false}},
-		Password: hashedPassword,
+	// Create a signup verification document in DB
+	code, err := utils.GenerateOTP()
+	if err != nil {
+		return err
 	}
-
-	id, err := uc.service.CreateUser(c.Request().Context(), user)
+	err = uc.service.CreateSignup(c.Request().Context(), userDetails.Email, code, hashedPassword)
 	if err != nil {
 		return err
 	}
 
-	jwt, err := utils.CreateJwtToken(id)
+	// Send verification code on email
+	err = utils.SendVerificationCode(code, userDetails.Email)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to sign the jwt")
+		return err
 	}
 
-	return c.JSON(http.StatusCreated, map[string]string{"jwt": jwt})
+	return c.JSON(http.StatusCreated, map[string]string{"message": "Verification code sent on email"})
 }
 
 func (uc *UserController) Login(c echo.Context) error {
@@ -71,6 +75,7 @@ func (uc *UserController) Login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "Invalid Credentials")
 	}
 
+	// If the user logged in with Oauth but didn't create password, so redirect him to first create password
 	if existingUser.Password == "" {
 		return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?id=%s", fmt.Sprintf("%s/backend_redirect", os.Getenv("FRONTEND_URL")), existingUser.ID.Hex()))
 	}

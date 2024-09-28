@@ -6,7 +6,9 @@ import (
 	"encoding/base64"
 	"fmt"
 	"log"
+	"math/big"
 	"net/http"
+	"os"
 	"time"
 
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/models"
@@ -78,4 +80,43 @@ func UpdateEmails(emailBody models.Email, emails []models.Email) []models.Email 
 		}
 	}
 	return emails
+}
+
+func GenerateOTP() (string, error) {
+	max := big.NewInt(999999)
+	min := big.NewInt(100000)
+
+	// Generate a random number in the range [100000, 999999]
+	otpBig, err := rand.Int(rand.Reader, max.Sub(max, min).Add(max, big.NewInt(1)))
+	if err != nil {
+		return "", err
+	}
+
+	// Add the minimum value (100000) to get a 6-digit number
+	otp := otpBig.Add(otpBig, min).Int64()
+
+	// Return OTP as a string
+	return fmt.Sprintf("%06d", otp), nil
+}
+
+func SendVerificationCode(code, email string) error {
+	subject := "Email Verification Code - The Sloths"
+	heading := "Verification Code"
+	info1 := "To activate your email, please use the given OTP. Don't share with anyone :)"
+	link := ""
+	button_text := code
+	time_duration := "1 day"
+	regenerate_link := os.Getenv("BACKEND_URL") + "/api/v1/auth/resend_code?email=" + email
+
+	err := SendEmail([]string{email}, subject, heading, info1, link, button_text, time_duration, regenerate_link)
+	return err
+}
+
+func AtleastOneVerifiedEmailExists(emails []models.Email) bool {
+	for _, e := range emails {
+		if e.IsVerified {
+			return true
+		}
+	}
+	return false
 }

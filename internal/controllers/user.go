@@ -144,10 +144,11 @@ func (uc *UserController) SendActivationMail(c echo.Context) error {
 	heading := "Activate your account"
 	info1 := "To activate your account, please click the button below and follow the instructions provided."
 	link := fmt.Sprintf("%s/activate_account?token=%s", baseUrl, utils.EncodeToken(id.Hex(), email, newCode.Code))
+	button_text := "Activate account"
 	time_duration := "1 day"
 	regenerate_link := os.Getenv("BACKEND_URL") + "/api/v1/auth/send_activation"
 
-	err = utils.SendEmail([]string{email}, subject, heading, info1, link, time_duration, regenerate_link)
+	err = utils.SendEmail([]string{email}, subject, heading, info1, link, button_text, time_duration, regenerate_link)
 	if err != nil {
 		return err
 	}
@@ -201,4 +202,70 @@ func (uc *UserController) VerifyEmail(c echo.Context) error {
 		return err
 	}
 	return c.JSON(http.StatusOK, map[string]string{"message": "Email verified successfully"})
+}
+
+func (uc *UserController) SendVerificationCode(c echo.Context) error {
+	email := c.QueryParam("email")
+
+	// Get the existing signup doc
+	signup, err := uc.service.GetSignup(c.Request().Context(), email)
+	if err != nil {
+		return err
+	}
+
+	// Generate new code
+	code, err := utils.GenerateOTP()
+	if err != nil {
+		return err
+	}
+
+	signup.Code = code
+	signup.ExpiresAt = time.Now().Add(3 * time.Minute)
+
+	// Update the signup doc in the database
+	err = uc.service.UpdateSignup(c.Request().Context(), email, signup)
+	if err != nil {
+		return err
+	}
+
+	// Send the verification code to the user's email
+	err = utils.SendVerificationCode(code, email)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "Verification Code sent on email"})
+}
+
+func (uc *UserController) VerifyVerificationCode(c echo.Context) error {
+	email := c.QueryParam("email")
+	code := c.QueryParam("code")
+
+	if email == "" || code == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid email or code")
+	}
+
+	// Get the existing signup doc
+	signup, err := uc.service.GetSignup(c.Request().Context(), email)
+	if err != nil {
+		return err
+	}
+
+	// Check if the code is valid and not expired
+	if signup.Code != code || time.Now().After(signup.ExpiresAt) {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid verification code or expired")
+	}
+
+	// Create a new user with the signup data
+	user := &models.User{
+		Password: signup.Password,
+		Emails:   []models.Email{{Email: email, IsVerified: true}},
+	}
+
+	_, err = uc.service.CreateUser(c.Request().Context(), user)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusCreated, map[string]string{"message": "Signed up successfully"})
 }

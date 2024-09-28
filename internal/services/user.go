@@ -23,15 +23,19 @@ func NewUserService(client *mongo.Client) *UserService {
 	}
 }
 
-func (s *UserService) getCollection() *mongo.Collection {
+func (s *UserService) getUserCollection() *mongo.Collection {
 	return s.client.Database(os.Getenv("DB_NAME")).Collection("users")
+}
+
+func (s *UserService) getSignupsCollection() *mongo.Collection {
+	return s.client.Database(os.Getenv("DB_NAME")).Collection("signups")
 }
 
 func (s *UserService) CreateUser(ctx context.Context, user *models.User) (string, error) {
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
 
-	insertedDoc, err := s.getCollection().InsertOne(ctx, user)
+	insertedDoc, err := s.getUserCollection().InsertOne(ctx, user)
 	if err != nil {
 		return "", err
 	}
@@ -43,7 +47,7 @@ func (s *UserService) CreateUser(ctx context.Context, user *models.User) (string
 }
 
 func (s *UserService) GetAllUsers(ctx context.Context) ([]models.User, error) {
-	cur, err := s.getCollection().Find(ctx, bson.D{})
+	cur, err := s.getUserCollection().Find(ctx, bson.D{})
 	if err != nil {
 		return nil, err
 	}
@@ -69,7 +73,7 @@ func (s *UserService) GetAllUsers(ctx context.Context) ([]models.User, error) {
 
 func (s *UserService) GetUser(ctx context.Context, filter bson.M) (*models.User, error) {
 	var user models.User
-	err := s.getCollection().FindOne(ctx, filter).Decode(&user)
+	err := s.getUserCollection().FindOne(ctx, filter).Decode(&user)
 	if err == mongo.ErrNoDocuments {
 		return nil, nil
 	}
@@ -90,7 +94,7 @@ func (s *UserService) UpdateUser(ctx context.Context, id string, user *models.Us
 
 	filter := bson.M{"_id": oid}
 	update := bson.M{"$set": user}
-	_, err = s.getCollection().UpdateOne(ctx, filter, update)
+	_, err = s.getUserCollection().UpdateOne(ctx, filter, update)
 
 	return err
 }
@@ -102,6 +106,6 @@ func (s *UserService) DeleteUser(ctx context.Context, id string) error {
 	}
 
 	filter := bson.M{"_id": oid}
-	_, err = s.getCollection().DeleteOne(ctx, filter)
+	_, err = s.getUserCollection().DeleteOne(ctx, filter)
 	return err
 }

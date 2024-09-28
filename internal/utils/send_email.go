@@ -7,16 +7,11 @@ import (
 	"github.com/go-mail/mail"
 )
 
-func SendEmail(to []string, subject, heading, info1, link, time_duration, regenerate_link string) error {
+func SendEmail(to []string, subject, heading, info1, link, button_text, time_duration, regenerate_link string) error {
 	from := os.Getenv("FROM_EMAIL")
 	password := os.Getenv("SMTP_APP_PASS")
 
 	logo_url := "https://iili.io/dQyCGGj.png"
-	// heading := "Activate your account"
-	// info1 := "To activate your account, please click the button below and follow the instructions provided."
-	// link := "random_link"
-	// time_duration := "1 day"
-	// regenerate_link := "random"
 
 	body := fmt.Sprintf(`
 		<html lang="en">
@@ -48,8 +43,7 @@ func SendEmail(to []string, subject, heading, info1, link, time_duration, regene
 								<td align="center">
 									<a href="%s" target="_blank" style="text-decoration: none;">
 										<button
-											style="text-align: center; background-color: blue; border-radius: 15px; color: white; height: 40px; padding-left: 15px; padding-right: 15px; font-weight: bold; cursor: pointer; margin: 10px">Activate
-											account</button>
+											style="text-align: center; background-color: blue; border-radius: 15px; color: white; height: 40px; padding-left: 15px; padding-right: 15px; font-weight: bold; cursor: pointer; margin: 10px">%s</button>
 									</a>
 								</td>
 							</tr>
@@ -67,7 +61,7 @@ func SendEmail(to []string, subject, heading, info1, link, time_duration, regene
 		</body>
 
 		</html>
-	`, logo_url, heading, info1, link, time_duration, regenerate_link)
+	`, logo_url, heading, info1, link, button_text, time_duration, regenerate_link)
 
 	m := mail.NewMessage()
 

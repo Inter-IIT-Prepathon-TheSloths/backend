@@ -8,11 +8,13 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"strings"
 	"time"
 
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/models"
 	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt"
+	"github.com/google/uuid"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
@@ -116,4 +118,45 @@ func ConstructEmailFilter(email string) bson.M {
 		},
 	}
 	return filter
+}
+
+func GenerateVerificationCode() models.VerificationCode {
+	token := uuid.New().String()
+	expiration := time.Now().Add(24 * time.Hour)
+	code := models.VerificationCode{
+		Code:      token,
+		ExpiresAt: expiration,
+	}
+	return code
+}
+
+func EncodeToken(id, email, code string) string {
+	combined := fmt.Sprintf("%s:%s:%s", id, email, code)
+
+	encoded := base64.StdEncoding.EncodeToString([]byte(combined))
+	return encoded
+}
+
+func DecodeToken(token string) (string, string, string, error) {
+	decodedBytes, err := base64.StdEncoding.DecodeString(token)
+	if err != nil {
+		return "", "", "", err
+	}
+
+	decoded := string(decodedBytes)
+	parts := strings.Split(decoded, ":")
+	if len(parts) != 2 {
+		return "", "", "", fmt.Errorf("invalid token format")
+	}
+	return parts[0], parts[1], parts[2], nil
+}
+
+func UpdateEmails(emailBody models.Email, emails []models.Email) []models.Email {
+	for i, e := range emails {
+		if e.Email == emailBody.Email {
+			emails[i] = emailBody
+			break
+		}
+	}
+	return emails
 }

@@ -17,8 +17,14 @@ type User struct {
 }
 
 type Email struct {
-	Email      string `bson:"email" validate:"required,email" json:"email"`
-	IsVerified bool   `bson:"is_verified" json:"is_verified"`
+	Email            string           `bson:"email" validate:"required,email" json:"email"`
+	IsVerified       bool             `bson:"is_verified" json:"is_verified"`
+	VerificationCode VerificationCode `bson:"verification_code,omitempty" json:"-"`
+}
+
+type VerificationCode struct {
+	Code      string    `bson:"code"`
+	ExpiresAt time.Time `bson:"expires_at"`
 }
 
 type LoginUserDetails struct {

@@ -5,6 +5,8 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"os"
+	"time"
 
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/config"
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/models"
@@ -87,14 +89,8 @@ func (uc *UserController) Login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "User not found")
 	}
 
-	emailBody := utils.GetEmailBody(userDetails.Email, existingUser.Emails)
-	if !emailBody.IsVerified {
-		return echo.NewHTTPError(http.StatusBadRequest, "please verify your email to continue")
-	}
-
 	if existingUser.Password == "" {
-		baseUrl := c.Request().Proto + "://" + c.Request().Host
-		return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?id=%s", fmt.Sprintf("%s/backend_redirect", baseUrl), existingUser.ID.Hex()))
+		return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?id=%s", fmt.Sprintf("%s/backend_redirect", os.Getenv("FRONTEND_URL")), existingUser.ID.Hex()))
 	}
 
 	err = utils.VerifyPassword(existingUser.Password, userDetails.Password)
@@ -146,7 +142,7 @@ func (uc *UserController) CallbackGoogle(c echo.Context) error {
 		return err
 	}
 
-	baseUrl := c.Request().Proto + "://" + c.Request().Host
+	baseUrl := os.Getenv("FRONTEND_URL")
 	if existingUser == nil {
 		user := &models.User{
 			Emails:  []models.Email{{Email: userDetails.Email, IsVerified: true}},
@@ -217,12 +213,8 @@ func (uc *UserController) CreatePassword(c echo.Context) error {
 }
 
 func (uc *UserController) GetMyDetails(c echo.Context) error {
-	id := c.Get("_id").(string)
-	oid, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
-	user, err := uc.service.GetUser(c.Request().Context(), bson.M{"_id": oid})
+	id := c.Get("_id")
+	user, err := uc.service.GetUser(c.Request().Context(), bson.M{"_id": id})
 	if err != nil {
 		return err
 	}
@@ -240,13 +232,9 @@ func (uc *UserController) AddEmail(c echo.Context) error {
 		return validation_error
 	}
 
-	id := c.Get("_id").(string)
-	oid, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return err
-	}
+	id := c.Get("_id").(primitive.ObjectID)
 
-	user, err := uc.service.GetUser(c.Request().Context(), bson.M{"_id": oid})
+	user, err := uc.service.GetUser(c.Request().Context(), bson.M{"_id": id})
 	if err != nil {
 		return err
 	}
@@ -263,10 +251,109 @@ func (uc *UserController) AddEmail(c echo.Context) error {
 	email.IsVerified = false
 	user.Emails = append(user.Emails, email)
 
-	err = uc.service.UpdateUser(c.Request().Context(), id, user)
+	err = uc.service.UpdateUser(c.Request().Context(), id.Hex(), user)
 	if err != nil {
 		return err
 	}
 
 	return c.JSON(http.StatusCreated, map[string]string{"message": "Email added successfully"})
+}
+
+func (uc *UserController) SendActivationMail(c echo.Context) error {
+	email := c.Param("email")
+	id := c.Get("_id").(primitive.ObjectID)
+
+	user, err := uc.service.GetUser(c.Request().Context(), bson.M{"_id": id})
+	if err != nil {
+		return err
+	}
+
+	if user == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "User not found")
+	}
+
+	emailBody := utils.GetEmailBody(email, user.Emails)
+	if emailBody.Email == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Email not found")
+	}
+
+	if emailBody.IsVerified {
+		return echo.NewHTTPError(http.StatusBadRequest, "Email already verified")
+	}
+
+	newCode := utils.GenerateVerificationCode()
+	for ind, e := range user.Emails {
+		if e.Email == email {
+			user.Emails[ind].VerificationCode = newCode
+			break
+		}
+	}
+
+	err = uc.service.UpdateUser(c.Request().Context(), id.Hex(), user)
+	if err != nil {
+		return err
+	}
+
+	baseUrl := os.Getenv("FRONTEND_URL")
+	subject := "Activate your account - The Sloths"
+	heading := "Activate your account"
+	info1 := "To activate your account, please click the button below and follow the instructions provided."
+	link := fmt.Sprintf("%s/activate_account?token=%s", baseUrl, utils.EncodeToken(id.Hex(), email, newCode.Code))
+	time_duration := "1 day"
+	regenerate_link := os.Getenv("BACKEND_URL") + "/api/v1/auth/send_activation"
+
+	err = utils.SendEmail([]string{email}, subject, heading, info1, link, time_duration, regenerate_link)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"message": "Activation link has been sent successfully to your email"})
+}
+
+func (uc *UserController) VerifyEmail(c echo.Context) error {
+	token := c.Param("token")
+	id, email, code, err := utils.DecodeToken(token)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid token")
+	}
+
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+
+	user, err := uc.service.GetUser(c.Request().Context(), bson.M{"_id": oid})
+	if err != nil {
+		return err
+	}
+
+	if user == nil {
+		return echo.NewHTTPError(http.StatusNotFound, "User not found")
+	}
+
+	emailBody := utils.GetEmailBody(email, user.Emails)
+	if emailBody.Email == "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Email not found")
+	}
+
+	if emailBody.VerificationCode.Code != code {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid verification code")
+	}
+
+	now := time.Now()
+	if now.After(emailBody.VerificationCode.ExpiresAt) {
+		return echo.NewHTTPError(http.StatusBadRequest, "Verification code has expired")
+	}
+
+	emailBody.IsVerified = true
+	emailBody.VerificationCode = models.VerificationCode{}
+
+	updatedEmails := utils.UpdateEmails(emailBody, user.Emails)
+	user.Emails = updatedEmails
+
+	err = uc.service.UpdateUser(c.Request().Context(), id, user)
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, map[string]string{"message": "Email verified successfully"})
 }

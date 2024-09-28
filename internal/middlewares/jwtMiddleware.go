@@ -7,6 +7,7 @@ import (
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/utils"
 	"github.com/golang-jwt/jwt"
 	"github.com/labstack/echo/v4"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 )
 
 func AuthenticationMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
@@ -30,7 +31,11 @@ func AuthenticationMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusUnauthorized, "Invalid token claims")
 		}
 
-		c.Set("_id", claims["_id"])
+		oid, err := primitive.ObjectIDFromHex(claims["_id"].(string))
+		if err != nil {
+			return err
+		}
+		c.Set("_id", oid)
 
 		return next(c)
 	}

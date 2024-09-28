@@ -21,7 +21,7 @@ func AuthenticationMiddleware(next echo.HandlerFunc) echo.HandlerFunc {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid authorization format")
 		}
 
-		token, err := utils.VerifyToken(words[1])
+		token, err := utils.VerifyJwt(words[1])
 		if err != nil {
 			return echo.NewHTTPError(http.StatusBadRequest, "Invalid JWT Token")
 		}

@@ -1,7 +1,6 @@
 package server
 
 import (
-	"fmt"
 	"log"
 	"net/http"
 
@@ -17,11 +16,9 @@ func customHTTPErrorHandler(err error, c echo.Context) {
 	msg := "Internal Server Error"
 
 	he, ok := err.(*echo.HTTPError)
-	fmt.Println(he, ok)
 	if ok {
 		code = he.Code
 		msg = he.Message.(string)
-		fmt.Println("Some", err)
 	}
 
 	log.Printf("Error: %v", err)

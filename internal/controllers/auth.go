@@ -13,6 +13,7 @@ import (
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/oauth2"
 )
@@ -26,33 +27,38 @@ func NewUserController(client *mongo.Client) *UserController {
 }
 
 func (uc *UserController) SignUp(c echo.Context) error {
-	var user models.User
+	var userDetails models.LoginUserDetails
 
-	if err := c.Bind(&user); err != nil {
+	if err := c.Bind(&userDetails); err != nil {
 		return err
 	}
 
-	validation_err := utils.Validate(user)
+	validation_err := utils.Validate(userDetails)
 	if validation_err != nil {
 		return validation_err
 	}
 
-	existingUser, err := uc.service.GetUser(c.Request().Context(), bson.M{"email": user.Email})
+	filter := utils.ConstructEmailFilter(userDetails.Email)
+	existingUser, err := uc.service.GetUser(c.Request().Context(), filter)
 	if err != nil {
 		return err
 	}
 
 	if existingUser != nil {
-		return echo.NewHTTPError(http.StatusConflict, "Email already registered")
+		return echo.NewHTTPError(http.StatusBadRequest, "Email already registered")
 	}
 
-	hashedPassword, err := utils.HashPassword(user.Password)
+	hashedPassword, err := utils.HashPassword(userDetails.Password)
 	if err != nil {
 		return err
 	}
-	user.Password = hashedPassword
 
-	id, err := uc.service.CreateUser(c.Request().Context(), &user)
+	user := &models.User{
+		Emails:   []models.Email{{Email: userDetails.Email, IsVerified: false}},
+		Password: hashedPassword,
+	}
+
+	id, err := uc.service.CreateUser(c.Request().Context(), user)
 	if err != nil {
 		return err
 	}
@@ -66,13 +72,13 @@ func (uc *UserController) SignUp(c echo.Context) error {
 }
 
 func (uc *UserController) Login(c echo.Context) error {
-	var user models.User
-
-	if err := c.Bind(&user); err != nil {
+	var userDetails models.LoginUserDetails
+	if err := c.Bind(&userDetails); err != nil {
 		return err
 	}
 
-	existingUser, err := uc.service.GetUser(c.Request().Context(), bson.M{"email": user.Email})
+	filter := utils.ConstructEmailFilter(userDetails.Email)
+	existingUser, err := uc.service.GetUser(c.Request().Context(), filter)
 	if err != nil {
 		return err
 	}
@@ -81,7 +87,17 @@ func (uc *UserController) Login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusNotFound, "User not found")
 	}
 
-	err = utils.VerifyPassword(existingUser.Password, user.Password)
+	emailBody := utils.GetEmailBody(userDetails.Email, existingUser.Emails)
+	if !emailBody.IsVerified {
+		return echo.NewHTTPError(http.StatusBadRequest, "please verify your email to continue")
+	}
+
+	if existingUser.Password == "" {
+		baseUrl := c.Request().Proto + "://" + c.Request().Host
+		return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?id=%s", fmt.Sprintf("%s/backend_redirect", baseUrl), existingUser.ID.Hex()))
+	}
+
+	err = utils.VerifyPassword(existingUser.Password, userDetails.Password)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid credentials")
 	}
@@ -100,13 +116,12 @@ func (uc *UserController) GoogleAuthController(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate state")
 	}
 	url := config.Google_conf.AuthCodeURL(state, oauth2.AccessTypeOffline)
-	return c.JSON(http.StatusOK, url)
+	return c.JSON(http.StatusOK, map[string]string{"url": url})
 }
 
 func (uc *UserController) CallbackGoogle(c echo.Context) error {
 	conf := config.Google_conf
 	code := c.Request().URL.Query().Get("code")
-	fmt.Println(code)
 	t, err := conf.Exchange(context.Background(), code)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Failed to login with google")
@@ -118,33 +133,35 @@ func (uc *UserController) CallbackGoogle(c echo.Context) error {
 	}
 	defer resp.Body.Close()
 
-	var userDetails models.UserDetails
+	var userDetails models.GoogleUserDetails
 
 	err = json.NewDecoder(resp.Body).Decode(&userDetails)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to decode the userinfo body")
 	}
 
-	existingUser, err := uc.service.GetUser(c.Request().Context(), bson.M{"email": userDetails.Email})
+	filter := utils.ConstructEmailFilter(userDetails.Email)
+	existingUser, err := uc.service.GetUser(c.Request().Context(), filter)
 	if err != nil {
 		return err
 	}
 
+	baseUrl := c.Request().Proto + "://" + c.Request().Host
 	if existingUser == nil {
 		user := &models.User{
-			Email:    userDetails.Email,
-			Picture:  userDetails.Picture,
-			Username: userDetails.Name,
+			Emails:  []models.Email{{Email: userDetails.Email, IsVerified: true}},
+			Picture: userDetails.Picture,
+			Name:    userDetails.Name,
 		}
 		idCreated, err := uc.service.CreateUser(c.Request().Context(), user)
 		if err != nil {
 			return err
 		}
-		return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?id=%s", config.Frontend_password, idCreated))
+		return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/backend_redirect?id=%s", baseUrl, idCreated))
 	}
 
 	if existingUser.Password == "" {
-		return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?id=%s", config.Frontend_password, existingUser.ID))
+		return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/backend_redirect?id=%s", baseUrl, existingUser.ID.Hex()))
 	}
 
 	jwt, err := utils.CreateJwtToken(existingUser.ID.Hex())
@@ -152,8 +169,7 @@ func (uc *UserController) CallbackGoogle(c echo.Context) error {
 		return err
 	}
 
-	fmt.Printf("User: %v", userDetails)
-	return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?token=%s", config.Frontend_home, jwt))
+	return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/backend_redirect?token=%s", baseUrl, jwt))
 }
 
 func (uc *UserController) CreatePassword(c echo.Context) error {
@@ -167,7 +183,12 @@ func (uc *UserController) CreatePassword(c echo.Context) error {
 		return validation_error
 	}
 
-	user, err := uc.service.GetUser(c.Request().Context(), bson.M{"_id": password.ID})
+	oid, err := primitive.ObjectIDFromHex(password.ID)
+	if err != nil {
+		return err
+	}
+
+	user, err := uc.service.GetUser(c.Request().Context(), bson.M{"_id": oid})
 	if err != nil {
 		return err
 	}
@@ -192,14 +213,60 @@ func (uc *UserController) CreatePassword(c echo.Context) error {
 		return err
 	}
 
-	return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s?token=%s", config.Frontend_home, jwt))
+	return c.JSON(http.StatusCreated, map[string]string{"token": jwt})
 }
 
-func (uc *UserController) GetUsers(c echo.Context) error {
-	users, err := uc.service.GetAllUsers(c.Request().Context())
+func (uc *UserController) GetMyDetails(c echo.Context) error {
+	id := c.Get("_id").(string)
+	oid, err := primitive.ObjectIDFromHex(id)
+	if err != nil {
+		return err
+	}
+	user, err := uc.service.GetUser(c.Request().Context(), bson.M{"_id": oid})
+	if err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, user)
+}
+
+func (uc *UserController) AddEmail(c echo.Context) error {
+	var email models.Email
+	if err := c.Bind(&email); err != nil {
+		return err
+	}
+
+	validation_error := utils.Validate(email)
+	if validation_error != nil {
+		return validation_error
+	}
+
+	id := c.Get("_id").(string)
+	oid, err := primitive.ObjectIDFromHex(id)
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, users)
+	user, err := uc.service.GetUser(c.Request().Context(), bson.M{"_id": oid})
+	if err != nil {
+		return err
+	}
+
+	emailExisting := utils.GetEmailBody(email.Email, user.Emails)
+	if emailExisting.Email != "" {
+		return echo.NewHTTPError(http.StatusBadRequest, "Email already exists")
+	}
+
+	if len(user.Emails) >= 8 {
+		return echo.NewHTTPError(http.StatusBadRequest, "Maximum number of emails reached")
+	}
+
+	email.IsVerified = false
+	user.Emails = append(user.Emails, email)
+
+	err = uc.service.UpdateUser(c.Request().Context(), id, user)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusCreated, map[string]string{"message": "Email added successfully"})
 }

@@ -7,16 +7,26 @@ import (
 )
 
 type User struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty"`
-	Username  string             `bson:"username" validate:"required,min=2,max=30"`
-	Email     string             `bson:"email" validate:"required,email"`
-	Password  string             `bson:"password" validate:"required,min=6"`
-	Picture   string             `bson:"picture,omitempty"`
-	CreatedAt time.Time          `bson:"created_at"`
-	UpdatedAt time.Time          `bson:"updated_at"`
+	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Name      string             `bson:"name" json:"name"`
+	Emails    []Email            `bson:"emails" validate:"required,dive,required,dive,email" json:"emails"`
+	Password  string             `bson:"password,omitempty" validate:"required,min=6" json:"-"`
+	Picture   string             `bson:"picture,omitempty" json:"picture"`
+	CreatedAt time.Time          `bson:"created_at" json:"-"`
+	UpdatedAt time.Time          `bson:"updated_at" json:"-"`
 }
 
-type UserDetails struct {
+type Email struct {
+	Email      string `bson:"email" validate:"required,email" json:"email"`
+	IsVerified bool   `bson:"is_verified" json:"is_verified"`
+}
+
+type LoginUserDetails struct {
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,min=6"`
+}
+
+type GoogleUserDetails struct {
 	Email   string `json:"email"`
 	Name    string `json:"name"`
 	Picture string `json:"picture"`

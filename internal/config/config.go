@@ -17,5 +17,3 @@ var Google_conf = &oauth2.Config{
 	Scopes:       []string{"email", "profile"},
 	Endpoint:     google.Endpoint,
 }
-var Frontend_home = os.Getenv("FRONTEND_HOME")
-var Frontend_password = os.Getenv("FRONTEND_PASSWORD")

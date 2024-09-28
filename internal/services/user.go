@@ -28,7 +28,6 @@ func (s *UserService) getCollection() *mongo.Collection {
 }
 
 func (s *UserService) CreateUser(ctx context.Context, user *models.User) (string, error) {
-	fmt.Println("Userrrr", user)
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()
 
@@ -51,7 +50,6 @@ func (s *UserService) GetAllUsers(ctx context.Context) ([]models.User, error) {
 	defer cur.Close(ctx)
 
 	var users []models.User
-	// fmt.Println("Users", users)
 
 	for cur.Next(ctx) {
 		var user models.User
@@ -88,12 +86,12 @@ func (s *UserService) UpdateUser(ctx context.Context, id string, user *models.Us
 		return err
 	}
 
-	user.ID = oid
 	user.UpdatedAt = time.Now()
 
-	filter := bson.M{"_id": user.ID}
+	filter := bson.M{"_id": oid}
 	update := bson.M{"$set": user}
 	_, err = s.getCollection().UpdateOne(ctx, filter, update)
+
 	return err
 }
 

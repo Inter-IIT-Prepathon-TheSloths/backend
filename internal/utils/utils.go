@@ -10,10 +10,12 @@ import (
 	"os"
 	"time"
 
+	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/models"
 	"github.com/go-playground/validator/v10"
 	"github.com/golang-jwt/jwt"
 	_ "github.com/joho/godotenv/autoload"
 	"github.com/labstack/echo/v4"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"golang.org/x/crypto/bcrypt"
 )
@@ -94,4 +96,24 @@ func Validate(s interface{}) error {
 		}
 	}
 	return nil
+}
+
+func GetEmailBody(email string, emails []models.Email) models.Email {
+	for _, e := range emails {
+		if e.Email == email {
+			return e
+		}
+	}
+	return models.Email{}
+}
+
+func ConstructEmailFilter(email string) bson.M {
+	filter := bson.M{
+		"emails": bson.M{
+			"$elemMatch": bson.M{
+				"email": email,
+			},
+		},
+	}
+	return filter
 }

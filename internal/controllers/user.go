@@ -126,7 +126,7 @@ func (uc *UserController) SendActivationMail(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusBadRequest, "Email already verified")
 	}
 
-	newCode := utils.GenerateVerificationCode()
+	newCode := utils.GenerateVerificationCode(24 * time.Hour)
 	for ind, e := range user.Emails {
 		if e.Email == email {
 			user.Emails[ind].VerificationCode = newCode
@@ -138,12 +138,13 @@ func (uc *UserController) SendActivationMail(c echo.Context) error {
 	if err != nil {
 		return err
 	}
+	token_str := fmt.Sprintf("%s:%s:%s", id.Hex(), email, newCode.Code)
 
 	baseUrl := os.Getenv("FRONTEND_URL")
 	subject := "Activate your account - The Sloths"
 	heading := "Activate your account"
 	info1 := "To activate your account, please click the button below and follow the instructions provided."
-	link := fmt.Sprintf("%s/activate_account?token=%s", baseUrl, utils.EncodeToken(id.Hex(), email, newCode.Code))
+	link := fmt.Sprintf("%s/activate_account?token=%s", baseUrl, utils.EncodeToken(token_str))
 	button_text := "Activate account"
 	time_duration := "1 day"
 	regenerate_link := os.Getenv("BACKEND_URL") + "/api/v1/auth/send_activation"
@@ -158,7 +159,10 @@ func (uc *UserController) SendActivationMail(c echo.Context) error {
 
 func (uc *UserController) VerifyEmail(c echo.Context) error {
 	token := c.Param("token")
-	id, email, code, err := utils.DecodeToken(token)
+	parts, err := utils.DecodeToken(token)
+	id := parts[0]
+	email := parts[1]
+	code := parts[2]
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid token")
 	}

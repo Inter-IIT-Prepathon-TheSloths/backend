@@ -18,6 +18,9 @@ func RegisterUserRoutes(e *echo.Group, client *mongo.Client) {
 	e.GET("/verify_email", userController.VerifyEmail)
 	e.GET("/resend_code", userController.SendVerificationCode)
 	e.GET("/verify_code", userController.VerifyVerificationCode)
+	e.GET("/forgot_password", userController.ForgotPassword)
+	e.GET("/verify_forgot/:token", userController.VerifyForgotPassword)
+	e.POST("/recover_password", userController.RecoverPassword)
 
 	e.Use(middlewares.AuthenticationMiddleware)
 	e.GET("/me", userController.GetMyDetails)

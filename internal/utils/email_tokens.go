@@ -10,30 +10,26 @@ import (
 	"github.com/google/uuid"
 )
 
-func EncodeToken(id, email, code string) string {
-	combined := fmt.Sprintf("%s:%s:%s", id, email, code)
-
-	encoded := base64.StdEncoding.EncodeToString([]byte(combined))
+func EncodeToken(str string) string {
+	encoded := base64.StdEncoding.EncodeToString([]byte(str))
 	return encoded
 }
 
-func DecodeToken(token string) (string, string, string, error) {
-	decodedBytes, err := base64.StdEncoding.DecodeString(token)
+func DecodeToken(token string) ([]string, error) {
+	decodedBytes, err := base64.RawStdEncoding.DecodeString(token)
 	if err != nil {
-		return "", "", "", err
+		return []string{}, err
 	}
+	fmt.Println("Token", token)
 
 	decoded := string(decodedBytes)
 	parts := strings.Split(decoded, ":")
-	if len(parts) != 2 {
-		return "", "", "", fmt.Errorf("invalid token format")
-	}
-	return parts[0], parts[1], parts[2], nil
+	return parts, nil
 }
 
-func GenerateVerificationCode() models.VerificationCode {
+func GenerateVerificationCode(dur time.Duration) models.VerificationCode {
 	token := uuid.New().String()
-	expiration := time.Now().Add(24 * time.Hour)
+	expiration := time.Now().Add(dur)
 	code := models.VerificationCode{
 		Code:      token,
 		ExpiresAt: expiration,

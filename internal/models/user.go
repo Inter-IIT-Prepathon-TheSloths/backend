@@ -7,13 +7,14 @@ import (
 )
 
 type User struct {
-	ID        primitive.ObjectID `bson:"_id,omitempty" json:"id"`
-	Name      string             `bson:"name" json:"name"`
-	Emails    []Email            `bson:"emails" validate:"required,dive,required,dive,email" json:"emails"`
-	Password  string             `bson:"password,omitempty" json:"-"`
-	Picture   string             `bson:"picture,omitempty" json:"picture"`
-	CreatedAt time.Time          `bson:"created_at" json:"-"`
-	UpdatedAt time.Time          `bson:"updated_at" json:"-"`
+	ID             primitive.ObjectID `bson:"_id,omitempty" json:"id"`
+	Name           string             `bson:"name" json:"name"`
+	Emails         []Email            `bson:"emails" validate:"required,dive,required,dive,email" json:"emails"`
+	Password       string             `bson:"password,omitempty" json:"-"`
+	Picture        string             `bson:"picture,omitempty" json:"picture"`
+	ForgotPassword VerificationCode   `bson:"forgot_password,omitempty" json:"-"`
+	CreatedAt      time.Time          `bson:"created_at" json:"-"`
+	UpdatedAt      time.Time          `bson:"updated_at" json:"-"`
 }
 
 type Email struct {

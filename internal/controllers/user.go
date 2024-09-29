@@ -58,11 +58,7 @@ func (uc *UserController) CreatePassword(c echo.Context) error {
 }
 
 func (uc *UserController) GetMyDetails(c echo.Context) error {
-	id := c.Get("_id")
-	user, err := uc.service.GetUser(c.Request().Context(), bson.M{"_id": id})
-	if err != nil {
-		return err
-	}
+	user := c.Get("user").(*models.User)
 	return c.JSON(http.StatusOK, user)
 }
 
@@ -77,12 +73,7 @@ func (uc *UserController) AddEmail(c echo.Context) error {
 		return validation_error
 	}
 
-	id := c.Get("_id").(primitive.ObjectID)
-
-	user, err := uc.service.GetUser(c.Request().Context(), bson.M{"_id": id})
-	if err != nil {
-		return err
-	}
+	user := c.Get("user").(*models.User)
 
 	emailExisting := utils.GetEmailBody(email.Email, user.Emails)
 	if emailExisting.Email != "" {
@@ -96,7 +87,7 @@ func (uc *UserController) AddEmail(c echo.Context) error {
 	email.IsVerified = false
 	user.Emails = append(user.Emails, email)
 
-	err = uc.service.UpdateUser(c.Request().Context(), id.Hex(), user)
+	err := uc.service.UpdateUser(c.Request().Context(), user.ID.Hex(), user)
 	if err != nil {
 		return err
 	}
@@ -269,6 +260,11 @@ func (uc *UserController) VerifyVerificationCode(c echo.Context) error {
 	_, err = uc.service.CreateUser(c.Request().Context(), user)
 	if err != nil {
 		return err
+	}
+
+	err = uc.service.DeleteSignup(c.Request().Context(), email)
+	if err != nil {
+		fmt.Println("Deleting signup failed: ", err)
 	}
 
 	return c.JSON(http.StatusCreated, map[string]string{"message": "Signed up successfully"})

@@ -111,7 +111,7 @@ func SendVerificationCode(code, email string) error {
 	info1 := "To activate your email, please use the given OTP. Don't share with anyone :)"
 	link := ""
 	button_text := code
-	time_duration := "3 Minutes"
+	time_duration := "15 Minutes"
 	regenerate_link := os.Getenv("BACKEND_URL") + "/api/v1/auth/resend_code?email=" + email
 
 	err := SendEmail([]string{email}, subject, heading, info1, link, button_text, time_duration, regenerate_link)
@@ -171,4 +171,24 @@ func AtleastOneVerifiedEmailExists(emails []models.Email) bool {
 		}
 	}
 	return false
+}
+
+func UpdatedBackupCodes(code string, backupCodes []string) ([]string, error) {
+	if len(backupCodes) == 0 {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Backup codes have been exhausted, sorry :(")
+	}
+
+	found := false
+	for i, b := range backupCodes {
+		if b == code {
+			found = true
+			backupCodes = append(backupCodes[:i], backupCodes[i+1:]...)
+			break
+		}
+	}
+
+	if !found {
+		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid backup code")
+	}
+	return backupCodes, nil
 }

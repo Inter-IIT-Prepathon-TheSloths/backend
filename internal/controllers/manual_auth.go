@@ -52,7 +52,7 @@ func (uc *UserController) SignUp(c echo.Context) error {
 		Email:     userDetails.Email,
 		Code:      code,
 		Password:  hashedPassword,
-		ExpiresAt: time.Now().Add(3 * time.Minute),
+		ExpiresAt: time.Now().Add(15 * time.Minute),
 	}
 	err = uc.service.UpdateSignup(c.Request().Context(), userDetails.Email, signup)
 	if err != nil {

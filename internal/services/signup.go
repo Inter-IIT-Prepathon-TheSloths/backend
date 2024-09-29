@@ -3,6 +3,7 @@ package services
 import (
 	"context"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/models"
@@ -10,6 +11,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
+
+func (s *UserService) getSignupsCollection() *mongo.Collection {
+	return s.client.Database(os.Getenv("DB_NAME")).Collection("signups")
+}
 
 func (s *UserService) CreateSignup(ctx context.Context, email, code, password string) error {
 	signup := &models.Signup{

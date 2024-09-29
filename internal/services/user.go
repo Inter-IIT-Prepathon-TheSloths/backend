@@ -27,10 +27,6 @@ func (s *UserService) getUserCollection() *mongo.Collection {
 	return s.client.Database(os.Getenv("DB_NAME")).Collection("users")
 }
 
-func (s *UserService) getSignupsCollection() *mongo.Collection {
-	return s.client.Database(os.Getenv("DB_NAME")).Collection("signups")
-}
-
 func (s *UserService) CreateUser(ctx context.Context, user *models.User) (string, error) {
 	user.CreatedAt = time.Now()
 	user.UpdatedAt = time.Now()

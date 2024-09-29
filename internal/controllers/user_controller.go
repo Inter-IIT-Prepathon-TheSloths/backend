@@ -13,3 +13,7 @@ type UserController struct {
 func NewUserController(client *mongo.Client) *UserController {
 	return &UserController{service: services.NewUserService(client)}
 }
+
+func (uc *UserController) GetUserService() *services.UserService {
+	return uc.service
+}

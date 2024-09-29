@@ -13,6 +13,7 @@ type User struct {
 	Password       string             `bson:"password,omitempty" json:"-"`
 	Picture        string             `bson:"picture,omitempty" json:"picture"`
 	ForgotPassword VerificationCode   `bson:"forgot_password,omitempty" json:"-"`
+	TwofaEnabled   bool               `bson:"twofa_enabled"`
 	CreatedAt      time.Time          `bson:"created_at" json:"-"`
 	UpdatedAt      time.Time          `bson:"updated_at" json:"-"`
 }

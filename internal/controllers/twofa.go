@@ -125,3 +125,27 @@ func (uc *UserController) GetTwofaInfo(c echo.Context) error {
 
 	return c.JSON(http.StatusOK, twofaToSend)
 }
+
+func (uc *UserController) RegenerateBackup2fa(c echo.Context) error {
+	twofa := c.Get("twofa").(*models.TwoFactor)
+
+	if twofa.Secret == "" {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Please provide a valid totp")
+	}
+
+	backupCodes, err := utils.GenerateBackupCodes()
+	if err != nil {
+		return err
+	}
+	twofa.BackupCodes = backupCodes
+
+	err = uc.service.UpdateTwofa(c.Request().Context(), twofa.UserID, twofa)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, map[string]interface{}{
+		"message":      "Backup codes regenerated successfully",
+		"backup_codes": backupCodes,
+	})
+}

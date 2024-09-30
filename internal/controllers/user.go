@@ -98,15 +98,7 @@ func (uc *UserController) AddEmail(c echo.Context) error {
 func (uc *UserController) SendActivationMail(c echo.Context) error {
 	email := c.Param("email")
 	id := c.Get("_id").(primitive.ObjectID)
-
-	user, err := uc.service.GetUser(c.Request().Context(), bson.M{"_id": id})
-	if err != nil {
-		return err
-	}
-
-	if user == nil {
-		return echo.NewHTTPError(http.StatusNotFound, "User not found")
-	}
+	user := c.Get("user").(*models.User)
 
 	emailBody := utils.GetEmailBody(email, user.Emails)
 	if emailBody.Email == "" {
@@ -125,7 +117,7 @@ func (uc *UserController) SendActivationMail(c echo.Context) error {
 		}
 	}
 
-	err = uc.service.UpdateUser(c.Request().Context(), id.Hex(), user)
+	err := uc.service.UpdateUser(c.Request().Context(), id.Hex(), user)
 	if err != nil {
 		return err
 	}
@@ -268,4 +260,8 @@ func (uc *UserController) VerifyVerificationCode(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusCreated, map[string]string{"message": "Signed up successfully"})
+}
+
+func (uc *UserController) UpdatePassword(c echo.Context) error {
+	return nil
 }

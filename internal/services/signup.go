@@ -16,6 +16,10 @@ func (s *UserService) getSignupsCollection() *mongo.Collection {
 	return s.client.Database(os.Getenv("DB_NAME")).Collection("signups")
 }
 
+func (s *UserService) getVerificationsCollection() *mongo.Collection {
+	return s.client.Database(os.Getenv("DB_NAME")).Collection("signups")
+}
+
 func (s *UserService) CreateSignup(ctx context.Context, email, code, password string) error {
 	signup := &models.Signup{
 		Email:     email,

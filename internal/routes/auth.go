@@ -15,9 +15,11 @@ func RegisterUserRoutes(e *echo.Group, client *mongo.Client) {
 	e.GET("/oauth/:provider", userController.AuthController)
 	e.GET("/callback/:provider", userController.Callback)
 	e.POST("/create_password", userController.CreatePassword)
+
 	e.GET("/verify_email", userController.VerifyEmail)
 	e.GET("/resend_code", userController.SendVerificationCode)
 	e.GET("/verify_code", userController.VerifyVerificationCode)
+
 	e.GET("/forgot_password", userController.ForgotPassword)
 	e.GET("/verify_forgot/:token", userController.VerifyForgotPassword)
 	e.POST("/recover_password", userController.RecoverPassword)
@@ -33,5 +35,7 @@ func RegisterUserRoutes(e *echo.Group, client *mongo.Client) {
 	e.DELETE("/disable_2fa", userController.Disable2fa)
 	e.GET("/enable_2fa", userController.Enable2fa)
 	e.GET("/get_2fa", userController.GetTwofaInfo)
+	e.GET("/regenerate_backups_2fa", userController.RegenerateBackup2fa)
+	// e.POST("/update_password", userController.UpdatePassword)
 	// e.GET("/test_2fa", userController.Test2fa)
 }

@@ -2,8 +2,8 @@ package services
 
 import (
 	"context"
-	"os"
 
+	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/config"
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
@@ -12,7 +12,7 @@ import (
 )
 
 func (s *UserService) getTwofaCollection() *mongo.Collection {
-	return s.client.Database(os.Getenv("DB_NAME")).Collection("twofa")
+	return s.client.Database(config.DbName).Collection("twofa")
 }
 
 func (s *UserService) UpdateTwofa(ctx context.Context, user_id primitive.ObjectID, twofa *models.TwoFactor) error {

@@ -3,11 +3,10 @@ package services
 import (
 	"context"
 	"fmt"
-	"os"
 	"time"
 
+	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/config"
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/models"
-	_ "github.com/joho/godotenv/autoload"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -24,7 +23,7 @@ func NewUserService(client *mongo.Client) *UserService {
 }
 
 func (s *UserService) getUserCollection() *mongo.Collection {
-	return s.client.Database(os.Getenv("DB_NAME")).Collection("users")
+	return s.client.Database(config.DbName).Collection("users")
 }
 
 func (s *UserService) CreateUser(ctx context.Context, user *models.User) (string, error) {

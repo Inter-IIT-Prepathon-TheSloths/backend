@@ -2,7 +2,6 @@ package controllers
 
 import (
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/services"
-	_ "github.com/joho/godotenv/autoload"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 

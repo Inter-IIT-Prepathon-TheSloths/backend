@@ -8,16 +8,12 @@ import (
 	"log"
 	"math/big"
 	"net/http"
-	"os"
 	"time"
 
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/models"
-	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/services"
 	"github.com/go-playground/validator/v10"
-	_ "github.com/joho/godotenv/autoload"
 	"github.com/labstack/echo/v4"
 	"go.mongodb.org/mongo-driver/bson"
-	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -103,65 +99,6 @@ func GenerateOTP() (string, error) {
 
 	// Return OTP as a string
 	return fmt.Sprintf("%06d", otp), nil
-}
-
-func SendVerificationCode(code, email string) error {
-	subject := "Email Verification Code - The Sloths"
-	heading := "Verification Code"
-	info1 := "To activate your email, please use the given OTP. Don't share with anyone :)"
-	link := ""
-	button_text := code
-	time_duration := "15 Minutes"
-	regenerate_link := os.Getenv("BACKEND_URL") + "/api/v1/auth/resend_code?email=" + email
-
-	err := SendEmail([]string{email}, subject, heading, info1, link, button_text, time_duration, regenerate_link)
-	return err
-}
-
-func SendRecoveryMail(link, email, time_duration string) error {
-	subject := "Password Recovery Link - The Sloths"
-	heading := "Password Recovery"
-	info1 := "To reset your password, please click on the given link."
-	button_text := "Recovery Link"
-	regenerate_link := os.Getenv("FRONTEND_URL") + "/forgot_password" + email
-
-	err := SendEmail([]string{email}, subject, heading, info1, link, button_text, time_duration, regenerate_link)
-	return err
-}
-
-func VerifyRecoveryToken(token string, sv *services.UserService, c echo.Context) (*models.User, error) {
-	token_parts, err := DecodeToken(token)
-	if err != nil {
-		return nil, err
-	}
-	id := token_parts[0]
-	code := token_parts[1]
-	fmt.Println(id)
-
-	oid, err := primitive.ObjectIDFromHex(id)
-	if err != nil {
-		return nil, err
-	}
-
-	user, err := sv.GetUser(c.Request().Context(), bson.M{"_id": oid})
-	if err != nil {
-		return nil, err
-	}
-
-	if user == nil {
-		return nil, echo.NewHTTPError(http.StatusNotFound, "User not found")
-	}
-
-	if user.ForgotPassword.Code != code {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Invalid verification code")
-	}
-
-	now := time.Now()
-	if now.After(user.ForgotPassword.ExpiresAt) {
-		return nil, echo.NewHTTPError(http.StatusBadRequest, "Recovery code has expired")
-	}
-
-	return user, nil
 }
 
 func AtleastOneVerifiedEmailExists(emails []models.Email) bool {

@@ -4,10 +4,6 @@ import (
 	"encoding/base64"
 	"fmt"
 	"strings"
-	"time"
-
-	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/models"
-	"github.com/google/uuid"
 )
 
 func EncodeToken(str string) string {
@@ -25,14 +21,4 @@ func DecodeToken(token string) ([]string, error) {
 	decoded := string(decodedBytes)
 	parts := strings.Split(decoded, ":")
 	return parts, nil
-}
-
-func GenerateVerificationCode(dur time.Duration) models.VerificationCode {
-	token := uuid.New().String()
-	expiration := time.Now().Add(dur)
-	code := models.VerificationCode{
-		Code:      token,
-		ExpiresAt: expiration,
-	}
-	return code
 }

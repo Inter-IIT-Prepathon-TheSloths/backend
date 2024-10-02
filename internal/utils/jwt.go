@@ -2,13 +2,13 @@ package utils
 
 import (
 	"fmt"
-	"os"
 	"time"
 
+	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/config"
 	"github.com/golang-jwt/jwt"
 )
 
-var jwt_secret = []byte(os.Getenv("JWT_SECRET"))
+var jwt_secret = []byte(config.JwtSecret)
 
 func CreateJwtToken(_id string) (string, error) {
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{

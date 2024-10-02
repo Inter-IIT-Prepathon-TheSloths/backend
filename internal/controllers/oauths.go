@@ -5,7 +5,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
-	"os"
 	"strings"
 
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/config"
@@ -23,9 +22,9 @@ func (uc *UserController) AuthController(c echo.Context) error {
 	}
 	var url string
 	if provider == "google" {
-		url = config.Google_conf.AuthCodeURL(state, oauth2.AccessTypeOffline)
+		url = config.GoogleConf.AuthCodeURL(state, oauth2.AccessTypeOffline)
 	} else if provider == "github" {
-		url = config.Github_conf.AuthCodeURL(state, oauth2.AccessTypeOffline)
+		url = config.GithubConf.AuthCodeURL(state, oauth2.AccessTypeOffline)
 	} else {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid provider")
 	}
@@ -37,10 +36,10 @@ func (uc *UserController) Callback(c echo.Context) error {
 	var conf *oauth2.Config
 	var api_url string
 	if provider == "google" {
-		conf = config.Google_conf
+		conf = config.GoogleConf
 		api_url = "https://www.googleapis.com/oauth2/v2/userinfo"
 	} else if provider == "github" {
-		conf = config.Github_conf
+		conf = config.GithubConf
 		api_url = "https://api.github.com/user/emails"
 	} else {
 		return echo.NewHTTPError(http.StatusBadRequest, "Invalid provider")
@@ -104,7 +103,7 @@ func (uc *UserController) Callback(c echo.Context) error {
 		return err
 	}
 
-	baseUrl := os.Getenv("FRONTEND_URL")
+	baseUrl := config.FrontendUrl
 	if existingUser == nil {
 		user := &models.User{
 			Emails:  emails,

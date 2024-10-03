@@ -18,14 +18,18 @@ func RegisterUserRoutes(e *echo.Group, client *mongo.Client) {
 	e.POST("/send_verification/:use", userController.SendVerificationMail)
 	e.POST("/verify_code/:use", userController.VerifyVerificationCode)
 
-	e.Use(middlewares.AuthenticationMiddleware(userController))
-	e.Use(middlewares.TwofaMiddleware(userController))
+	e.Use(middlewares.AuthenticationMiddleware(userController, false))
+	e.Use(middlewares.TwofaMiddleware(userController, false))
 
 	e.GET("/twofa_login", userController.TwofaLogin)
 	e.GET("/me", userController.GetMyDetails)
 	e.POST("/add_email", userController.AddEmail)
 	e.GET("/generate_2fasecret", userController.Generate2faSecret)
 
+	e.Use(middlewares.AuthenticationMiddleware(userController, true))
+	e.Use(middlewares.TwofaMiddleware(userController, true))
+
+	e.GET("/sensitive_login", userController.TwofaSensitiveLogin)
 	e.GET("/regenerate_2fasecret", userController.Generate2faSecret)
 	e.DELETE("/disable_2fa", userController.Disable2fa)
 	e.GET("/enable_2fa", userController.Enable2fa)

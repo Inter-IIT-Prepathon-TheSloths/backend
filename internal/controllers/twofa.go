@@ -152,10 +152,20 @@ func (uc *UserController) RegenerateBackup2fa(c echo.Context) error {
 
 func (uc *UserController) TwofaLogin(c echo.Context) error {
 	id := c.Get("_id").(primitive.ObjectID)
-	jwt, err := utils.CreateJwtToken(id.Hex(), true)
+	jwt, err := utils.CreateJwtToken(id.Hex(), true, false)
 	if err != nil {
 		return err
 	}
 
 	return c.JSON(http.StatusOK, map[string]string{"token": jwt})
+}
+
+func (uc *UserController) TwofaSensitiveLogin(c echo.Context) error {
+	id := c.Get("_id").(primitive.ObjectID)
+	jwt, err := utils.CreateJwtToken(id.Hex(), true, true)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"token_sensitive": jwt})
 }

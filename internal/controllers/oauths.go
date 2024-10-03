@@ -131,7 +131,7 @@ func (uc *UserController) Callback(c echo.Context) error {
 		}
 	}
 
-	jwt, err := utils.CreateJwtToken(existingUser.ID.Hex(), false)
+	jwt, err := utils.CreateJwtToken(existingUser.ID.Hex(), false, false)
 	if err != nil {
 		return err
 	}

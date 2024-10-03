@@ -39,7 +39,7 @@ func (uc *UserController) Login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid credentials")
 	}
 
-	jwt, err := utils.CreateJwtToken(existingUser.ID.Hex(), false)
+	jwt, err := utils.CreateJwtToken(existingUser.ID.Hex(), false, false)
 	if err != nil {
 		return err
 	}

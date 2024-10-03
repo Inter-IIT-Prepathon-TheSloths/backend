@@ -102,5 +102,11 @@ func (s *UserService) DeleteUser(ctx context.Context, id string) error {
 
 	filter := bson.M{"_id": oid}
 	_, err = s.getUserCollection().DeleteOne(ctx, filter)
+	if err != nil {
+		return err
+	}
+
+	filter = bson.M{"user_id": oid}
+	_, err = s.getTwofaCollection().DeleteMany(ctx, filter)
 	return err
 }

@@ -41,7 +41,9 @@ func New() *mongo.Client {
 		log.Fatalf("db connection error: %v", err)
 	}
 
-	utils.CheckHealth(client, 5)
+	if err := utils.CheckHealth(client, 5); err != nil {
+		log.Fatalf("db not accessible: %v", err)
+	}
 
 	return client
 }

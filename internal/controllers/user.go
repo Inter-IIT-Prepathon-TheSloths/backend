@@ -46,7 +46,7 @@ func (uc *UserController) CreatePassword(c echo.Context) error {
 		return err
 	}
 
-	jwt, err := utils.CreateJwtToken(user.ID.Hex())
+	jwt, err := utils.CreateJwtToken(user.ID.Hex(), false)
 	if err != nil {
 		return err
 	}

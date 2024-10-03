@@ -16,11 +16,17 @@ func TwofaMiddleware(userController *controllers.UserController) echo.Middleware
 		return func(c echo.Context) error {
 			user_id := c.Get("_id").(primitive.ObjectID)
 			user := c.Get("user").(*models.User)
+			twofa_ok := c.Get("twofa_ok").(bool)
 
 			twofa, err := userController.GetUserService().GetTwoFactor(c.Request().Context(), user_id)
 
 			if twofa == nil && !user.TwofaEnabled {
 				c.Set("twofa", &models.TwoFactor{})
+				return next(c)
+			}
+
+			if user.TwofaEnabled && twofa_ok {
+				c.Set("twofa", twofa)
 				return next(c)
 			}
 

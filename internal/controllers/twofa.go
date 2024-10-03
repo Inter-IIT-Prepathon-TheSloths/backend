@@ -149,3 +149,13 @@ func (uc *UserController) RegenerateBackup2fa(c echo.Context) error {
 		"backup_codes": backupCodes,
 	})
 }
+
+func (uc *UserController) TwofaLogin(c echo.Context) error {
+	id := c.Get("_id").(primitive.ObjectID)
+	jwt, err := utils.CreateJwtToken(id.Hex(), true)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{"token": jwt})
+}

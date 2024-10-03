@@ -3,6 +3,7 @@ package controllers
 import (
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/config"
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/models"
@@ -38,10 +39,12 @@ func (uc *UserController) Login(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "Invalid credentials")
 	}
 
-	jwt, err := utils.CreateJwtToken(existingUser.ID.Hex())
+	jwt, err := utils.CreateJwtToken(existingUser.ID.Hex(), false)
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, map[string]string{"jwt": jwt})
+	askForTwofa := existingUser.TwofaEnabled
+
+	return c.JSON(http.StatusOK, map[string]string{"token": jwt, "ask_for_twofa": strconv.FormatBool(askForTwofa)})
 }

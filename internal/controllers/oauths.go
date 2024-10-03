@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"net/http"
+	"strconv"
 	"strings"
 
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/config"
@@ -130,10 +131,12 @@ func (uc *UserController) Callback(c echo.Context) error {
 		}
 	}
 
-	jwt, err := utils.CreateJwtToken(existingUser.ID.Hex())
+	jwt, err := utils.CreateJwtToken(existingUser.ID.Hex(), false)
 	if err != nil {
 		return err
 	}
 
-	return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/backend_redirect?token=%s", baseUrl, jwt))
+	askForTwofa := existingUser.TwofaEnabled
+
+	return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/backend_redirect?token=%s&ask_for_twofa=%s", baseUrl, jwt, strconv.FormatBool(askForTwofa)))
 }

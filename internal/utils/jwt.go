@@ -10,11 +10,12 @@ import (
 
 var jwt_secret = []byte(config.JwtSecret)
 
-func CreateJwtToken(_id string) (string, error) {
+func CreateJwtToken(_id string, twofa_ok bool) (string, error) {
 	claims := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-		"_id": _id,
-		"exp": time.Now().Add(7 * 24 * time.Hour).Unix(), // Expiry: 1 Week
-		"iat": time.Now().Unix(),
+		"_id":      _id,
+		"twofa_ok": twofa_ok,
+		"exp":      time.Now().Add(15 * time.Minute).Unix(),
+		"iat":      time.Now().Unix(),
 	})
 
 	tokenString, err := claims.SignedString(jwt_secret)

@@ -48,6 +48,7 @@ func AuthenticationMiddleware(userController *controllers.UserController) echo.M
 			}
 			c.Set("user", user)
 			c.Set("_id", oid)
+			c.Set("twofa_ok", claims["twofa_ok"])
 
 			return next(c)
 		}

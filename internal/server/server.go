@@ -22,7 +22,9 @@ func customHTTPErrorHandler(err error, c echo.Context) {
 	}
 
 	log.Printf("Error: %v", err)
-	c.JSON(code, map[string]string{"error": msg})
+	if err := c.JSON(code, map[string]string{"error": msg}); err != nil {
+		log.Printf("Error: Failed to send JSON response: %v", err)
+	}
 }
 
 func NewServer(client *mongo.Client) *echo.Echo {
@@ -46,7 +48,9 @@ func NewServer(client *mongo.Client) *echo.Echo {
 
 func HealthCheck(client *mongo.Client) echo.HandlerFunc {
 	return func(c echo.Context) error {
-		utils.CheckHealth(client, 1)
+		if err := utils.CheckHealth(client, 1); err != nil {
+			return err
+		}
 		return c.JSON(http.StatusOK, map[string]string{"status": "OK"})
 	}
 }

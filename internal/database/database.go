@@ -17,14 +17,21 @@ var (
 )
 
 func createIndex(client *mongo.Client) {
-	collection := client.Database(config.DbName).Collection("verifications")
+	collection_verifications := client.Database(config.DbName).Collection("verifications")
+	collection_sessions := client.Database(config.DbName).Collection("sessions")
 
 	indexModel := mongo.IndexModel{
 		Keys:    bson.M{"expires_at": 1},
 		Options: options.Index().SetExpireAfterSeconds(0),
 	}
 
-	indexName, err := collection.Indexes().CreateOne(context.Background(), indexModel)
+	indexName, err := collection_verifications.Indexes().CreateOne(context.Background(), indexModel)
+	if err != nil {
+		log.Fatal(err)
+	}
+	fmt.Println("Index created: ", indexName)
+
+	indexName, err = collection_sessions.Indexes().CreateOne(context.Background(), indexModel)
 	if err != nil {
 		log.Fatal(err)
 	}

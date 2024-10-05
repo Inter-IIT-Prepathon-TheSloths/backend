@@ -17,6 +17,7 @@ func RegisterUserRoutes(e *echo.Group, client *mongo.Client) {
 
 	e.POST("/send_verification/:use", userController.SendVerificationMail)
 	e.POST("/verify_code/:use", userController.VerifyVerificationCode)
+	e.GET("/refresh_token", userController.RefreshToken)
 
 	e.Use(middlewares.AuthenticationMiddleware(userController, false))
 	e.Use(middlewares.TwofaMiddleware(userController, false))

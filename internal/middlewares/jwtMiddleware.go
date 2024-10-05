@@ -21,7 +21,7 @@ func AuthenticationMiddleware(userController *controllers.UserController, sensit
 				return next(c)
 			}
 
-			user, claims, err := utils.HandleJwt(bearerString, sensitive, userController.GetUserService(), c.Request().Context())
+			user, claims, _, err := utils.HandleJwt(bearerString, sensitive, userController.GetUserService(), c.Request().Context())
 			if err != nil {
 				return err
 			}

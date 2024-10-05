@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/models"
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/utils"
@@ -152,20 +153,37 @@ func (uc *UserController) RegenerateBackup2fa(c echo.Context) error {
 
 func (uc *UserController) TwofaLogin(c echo.Context) error {
 	id := c.Get("_id").(primitive.ObjectID)
-	jwt, err := utils.CreateJwtToken(id.Hex(), true, false)
+	jwt, err := utils.CreateJwtToken(id.Hex(), true, false, 15*time.Minute)
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, map[string]string{"token": jwt})
+	refreshToken, err := utils.CreateSessionToken(id, true, false, 15*24*time.Hour, c.Request().Context(), uc.service)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusBadRequest, map[string]string{
+		"message":      "Twofa Login Success",
+		"token":        jwt,
+		"refreshToken": refreshToken,
+		"status":       "success",
+	})
+
+	// return c.JSON(http.StatusOK, map[string]string{"token": jwt})
 }
 
 func (uc *UserController) TwofaSensitiveLogin(c echo.Context) error {
 	id := c.Get("_id").(primitive.ObjectID)
-	jwt, err := utils.CreateJwtToken(id.Hex(), true, true)
+	jwt, err := utils.CreateJwtToken(id.Hex(), true, true, 10*time.Minute)
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, map[string]string{"token_sensitive": jwt})
+	return c.JSON(http.StatusBadRequest, map[string]string{
+		"message":        "Twofa Login Success",
+		"tokenSensitive": jwt,
+		"status":         "success",
+	})
+	// return c.JSON(http.StatusOK, map[string]string{"token_sensitive": jwt})
 }

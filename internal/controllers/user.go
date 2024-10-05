@@ -2,6 +2,7 @@ package controllers
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/models"
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/utils"
@@ -46,12 +47,24 @@ func (uc *UserController) CreatePassword(c echo.Context) error {
 		return err
 	}
 
-	jwt, err := utils.CreateJwtToken(user.ID.Hex(), false, false)
+	jwt, err := utils.CreateJwtToken(user.ID.Hex(), false, false, 15*time.Minute)
 	if err != nil {
 		return err
 	}
 
-	return c.JSON(http.StatusCreated, map[string]string{"token": jwt})
+	refreshToken, err := utils.CreateSessionToken(user.ID, false, false, 15*24*time.Hour, c.Request().Context(), uc.service)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusBadRequest, map[string]string{
+		"message":      "Logged In",
+		"token":        jwt,
+		"refreshToken": refreshToken,
+		"status":       "success",
+	})
+
+	// return c.JSON(http.StatusCreated, map[string]string{"token": jwt})
 }
 
 func (uc *UserController) GetMyDetails(c echo.Context) error {
@@ -90,4 +103,33 @@ func (uc *UserController) AddEmail(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusCreated, map[string]string{"message": "Email added successfully"})
+}
+
+func (uc *UserController) RefreshToken(c echo.Context) error {
+	bearerString := c.Request().Header.Get("X-Refresh-Token")
+	if bearerString == "" {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Refresh token is required")
+	}
+
+	user, claims, refreshToken, err := utils.HandleJwt(bearerString, false, uc.service, c.Request().Context())
+	if err != nil {
+		return err
+	}
+
+	_, err = uc.service.GetSession(c.Request().Context(), user.ID, refreshToken)
+	if err != nil {
+		return err
+	}
+
+	twofa_ok := claims["twofa_ok"].(bool)
+
+	jwt, err := utils.CreateJwtToken(user.ID.Hex(), twofa_ok, false, 15*time.Minute)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, map[string]string{
+		"message": "Token refreshed successfully",
+		"token":   jwt,
+	})
 }

@@ -3,10 +3,10 @@ package controllers
 import (
 	"context"
 	"encoding/json"
-	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/config"
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/models"
@@ -104,7 +104,7 @@ func (uc *UserController) Callback(c echo.Context) error {
 		return err
 	}
 
-	baseUrl := config.FrontendUrl
+	// baseUrl := config.FrontendUrl
 	if existingUser == nil {
 		user := &models.User{
 			Emails:  emails,
@@ -115,11 +115,21 @@ func (uc *UserController) Callback(c echo.Context) error {
 		if err != nil {
 			return err
 		}
-		return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/backend_redirect?id=%s", baseUrl, idCreated))
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "Create a password to continue",
+			"id":      idCreated,
+			"status":  "redirect",
+		})
+		// return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/backend_redirect?id=%s", baseUrl, idCreated))
 	}
 
 	if existingUser.Password == "" {
-		return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/backend_redirect?id=%s", baseUrl, existingUser.ID.Hex()))
+		return c.JSON(http.StatusBadRequest, map[string]string{
+			"message": "Create a password to continue",
+			"id":      existingUser.ID.Hex(),
+			"status":  "redirect",
+		})
+		// return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/backend_redirect?id=%s", baseUrl, existingUser.ID.Hex()))
 	}
 
 	newEmails, needsUpdate := utils.UpdateOauthEmails(existingUser.Emails, emails)
@@ -131,12 +141,25 @@ func (uc *UserController) Callback(c echo.Context) error {
 		}
 	}
 
-	jwt, err := utils.CreateJwtToken(existingUser.ID.Hex(), false, false)
+	jwt, err := utils.CreateJwtToken(existingUser.ID.Hex(), false, false, 15*time.Minute)
+	if err != nil {
+		return err
+	}
+
+	refreshToken, err := utils.CreateSessionToken(existingUser.ID, false, false, 15*24*time.Hour, c.Request().Context(), uc.service)
 	if err != nil {
 		return err
 	}
 
 	askForTwofa := existingUser.TwofaEnabled
 
-	return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/backend_redirect?token=%s&ask_for_twofa=%s", baseUrl, jwt, strconv.FormatBool(askForTwofa)))
+	return c.JSON(http.StatusBadRequest, map[string]string{
+		"message":      "Logged In",
+		"token":        jwt,
+		"refreshToken": refreshToken,
+		"status":       "success",
+		"askForTwofa":  strconv.FormatBool(askForTwofa),
+	})
+
+	// return c.Redirect(http.StatusTemporaryRedirect, fmt.Sprintf("%s/backend_redirect?token=%s&ask_for_twofa=%s", baseUrl, jwt, strconv.FormatBool(askForTwofa)))
 }

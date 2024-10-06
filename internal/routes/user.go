@@ -7,8 +7,7 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-func RegisterUserRoutes(e *echo.Group, client *mongo.Client) {
-	userController := controllers.NewUserController(client)
+func RegisterUserRoutes(e *echo.Group, client *mongo.Client, userController *controllers.UserController) {
 
 	e.POST("/login", userController.Login)
 	e.GET("/oauth/:provider", userController.AuthController)

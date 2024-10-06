@@ -1,0 +1,100 @@
+_format_version: "2.1"
+services:
+- name: backend
+  url: http://backend:8080
+  routes:
+  - name: login
+    paths:
+    - /login
+    methods:
+    - POST
+  - name: oauth
+    paths:
+    - /oauth/:provider
+    methods:
+    - GET
+  - name: callback
+    paths:
+    - /callback/:provider
+    methods:
+    - GET
+  - name: create_password
+    paths:
+    - /create_password
+    methods:
+    - POST
+  - name: send_verification
+    paths:
+    - /send_verification/:use
+    methods:
+    - POST
+  - name: verify_code
+    paths:
+    - /verify_code/:use
+    methods:
+    - POST
+  - name: refresh_token
+    paths:
+    - /refresh_token
+    methods:
+    - GET
+  - name: logout
+    paths:
+    - /logout
+    methods:
+    - DELETE
+  - name: logout_all
+    paths:
+    - /logout_all
+    methods:
+    - DELETE
+  - name: twofa_login
+    paths:
+    - /twofa_login
+    methods:
+    - GET
+  - name: me
+    paths:
+    - /me
+    methods:
+    - GET
+  - name: add_email
+    paths:
+    - /add_email
+    methods:
+    - POST
+  - name: generate_2fasecret
+    paths:
+    - /generate_2fasecret
+    methods:
+    - GET
+  - name: enable_2fa
+    paths:
+    - /enable_2fa
+    methods:
+    - GET
+  - name: sensitive_login
+    paths:
+    - /sensitive_login
+    methods:
+    - GET
+  - name: regenerate_2fasecret
+    paths:
+    - /regenerate_2fasecret
+    methods:
+    - GET
+  - name: disable_2fa
+    paths:
+    - /disable_2fa
+    methods:
+    - DELETE
+  - name: get_2fa
+    paths:
+    - /get_2fa
+    methods:
+    - GET
+  - name: regenerate_backups_2fa
+    paths:
+    - /regenerate_backups_2fa
+    methods:
+    - GET

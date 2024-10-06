@@ -57,14 +57,14 @@ func (uc *UserController) CreatePassword(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusBadRequest, map[string]string{
-		"message":      "Logged In",
-		"token":        jwt,
-		"refreshToken": refreshToken,
-		"status":       "success",
-	})
+	// return c.JSON(http.StatusBadRequest, map[string]string{
+	// 	"message":      "Logged In",
+	// 	"token":        jwt,
+	// 	"refreshToken": refreshToken,
+	// 	"status":       "success",
+	// })
 
-	// return c.JSON(http.StatusCreated, map[string]string{"token": jwt})
+	return c.JSON(http.StatusCreated, map[string]string{"token": jwt, "refreshToken": refreshToken})
 }
 
 func (uc *UserController) GetMyDetails(c echo.Context) error {

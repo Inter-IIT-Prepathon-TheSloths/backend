@@ -1,6 +1,7 @@
 package config
 
 import (
+	"fmt"
 	"os"
 
 	_ "github.com/joho/godotenv/autoload"
@@ -9,12 +10,13 @@ import (
 	"golang.org/x/oauth2/google"
 )
 
+var BackendUrl = os.Getenv("BACKEND_URL")
 var google_clientid = os.Getenv("GOOGLE_CLIENT_ID")
 var google_clientSecret = os.Getenv("GOOGLE_CLIENT_SECRET")
 var GoogleConf = &oauth2.Config{
 	ClientID:     google_clientid,
 	ClientSecret: google_clientSecret,
-	RedirectURL:  "http://localhost:8080/api/v1/auth/callback/google",
+	RedirectURL:  fmt.Sprintf("%s/api/v1/auth/callback/google", BackendUrl),
 	Scopes:       []string{"email", "profile"},
 	Endpoint:     google.Endpoint,
 }
@@ -24,7 +26,7 @@ var github_clientSecret = os.Getenv("GITHUB_CLIENT_SECRET")
 var GithubConf = &oauth2.Config{
 	ClientID:     github_clientid,
 	ClientSecret: github_clientSecret,
-	RedirectURL:  "http://localhost:8080/api/v1/auth/callback/github",
+	RedirectURL:  fmt.Sprintf("%s/api/v1/auth/callback/github", BackendUrl),
 	Scopes:       []string{"user:email"},
 	Endpoint:     github.Endpoint,
 }
@@ -39,4 +41,3 @@ var JwtSecret = os.Getenv("JWT_SECRET")
 var SmtpAppPass = os.Getenv("SMTP_APP_PASS")
 var FromEmail = os.Getenv("FROM_EMAIL")
 var FrontendUrl = os.Getenv("FRONTEND_URL")
-var BackendUrl = os.Getenv("BACKEND_URL")

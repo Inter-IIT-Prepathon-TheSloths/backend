@@ -32,10 +32,10 @@ func RegisterUserRoutes(e *echo.Group, client *mongo.Client) {
 	e.Use(middlewares.AuthenticationMiddleware(userController, true))
 	e.Use(middlewares.TwofaMiddleware(userController, true))
 
+	e.GET("/enable_2fa", userController.Enable2fa)
 	e.GET("/sensitive_login", userController.TwofaSensitiveLogin)
 	e.GET("/regenerate_2fasecret", userController.Generate2faSecret)
 	e.DELETE("/disable_2fa", userController.Disable2fa)
-	e.GET("/enable_2fa", userController.Enable2fa)
 	e.GET("/get_2fa", userController.GetTwofaInfo)
 	e.GET("/regenerate_backups_2fa", userController.RegenerateBackup2fa)
 }

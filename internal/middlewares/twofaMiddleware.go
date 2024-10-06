@@ -18,7 +18,7 @@ func TwofaMiddleware(userController *controllers.UserController, sensitive bool)
 			user := c.Get("user").(*models.User)
 			twofa, err := userController.GetUserService().GetTwoFactor(c.Request().Context(), user_id)
 
-			if twofa == nil && !user.TwofaEnabled {
+			if !sensitive && !user.TwofaEnabled {
 				c.Set("twofa", &models.TwoFactor{})
 				return next(c)
 			}
@@ -45,7 +45,7 @@ func TwofaMiddleware(userController *controllers.UserController, sensitive bool)
 			if twofaCode == "" {
 				twofaCode = c.Request().Header.Get("X-2FA-Backup")
 				if twofaCode == "" {
-					return echo.NewHTTPError(http.StatusBadRequest, "Please provide the totp code or backup code")
+					return echo.NewHTTPError(http.StatusForbidden, "Please provide the totp code or backup code")
 				}
 
 				newBackupCodes, err := utils.UpdatedBackupCodes(twofaCode, twofa.BackupCodes)
@@ -62,7 +62,7 @@ func TwofaMiddleware(userController *controllers.UserController, sensitive bool)
 				backupCode = true
 			}
 			if twofaCode == "" {
-				return echo.NewHTTPError(http.StatusBadRequest, "Please provide the totp code")
+				return echo.NewHTTPError(http.StatusForbidden, "Please provide the totp code")
 			}
 
 			if err != nil {

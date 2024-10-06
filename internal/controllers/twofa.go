@@ -34,8 +34,10 @@ func (uc *UserController) Generate2faSecret(c echo.Context) error {
 	}
 
 	return c.JSON(http.StatusCreated, map[string]string{
-		"message": "Secret created successfully",
-		"secret":  key,
+		"message":     "Secret created successfully",
+		"secret":      key,
+		"issuer":      "TheSloths",
+		"accountName": id.Hex(),
 	})
 }
 
@@ -106,7 +108,7 @@ func (uc *UserController) Enable2fa(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusOK, map[string]string{"message": "2FA enabled successfully"})
+	return c.JSON(http.StatusOK, map[string][]string{"backupCodes": backupCodes})
 }
 
 func (uc *UserController) GetTwofaInfo(c echo.Context) error {
@@ -163,7 +165,7 @@ func (uc *UserController) TwofaLogin(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusBadRequest, map[string]string{
+	return c.JSON(http.StatusOK, map[string]string{
 		"message":      "Twofa Login Success",
 		"token":        jwt,
 		"refreshToken": refreshToken,
@@ -180,7 +182,7 @@ func (uc *UserController) TwofaSensitiveLogin(c echo.Context) error {
 		return err
 	}
 
-	return c.JSON(http.StatusBadRequest, map[string]string{
+	return c.JSON(http.StatusOK, map[string]string{
 		"message":        "Twofa Login Success",
 		"tokenSensitive": jwt,
 		"status":         "success",

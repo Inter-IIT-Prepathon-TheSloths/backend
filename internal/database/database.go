@@ -42,8 +42,6 @@ func New() *mongo.Client {
 	clientOptions := options.Client().ApplyURI(db_url)
 	client, err := mongo.Connect(context.Background(), clientOptions)
 
-	createIndex(client)
-
 	if err != nil {
 		log.Fatalf("db connection error: %v", err)
 	}
@@ -51,6 +49,8 @@ func New() *mongo.Client {
 	if err := utils.CheckHealth(client, 5); err != nil {
 		log.Fatalf("db not accessible: %v", err)
 	}
+
+	createIndex(client)
 
 	return client
 }

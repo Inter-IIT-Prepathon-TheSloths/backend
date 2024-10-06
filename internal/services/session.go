@@ -46,3 +46,9 @@ func (s *UserService) DeleteSession(ctx context.Context, userId primitive.Object
 	_, err := s.getSessionsCollection().DeleteOne(ctx, filter)
 	return err
 }
+
+func (s *UserService) DeleteAllSessions(ctx context.Context, userId primitive.ObjectID) error {
+	filter := bson.M{"user_id": userId}
+	_, err := s.getSessionsCollection().DeleteMany(ctx, filter)
+	return err
+}

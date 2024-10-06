@@ -65,7 +65,7 @@ func VerifyJwt(tokenString string) (*jwt.Token, error) {
 	return token, nil
 }
 
-func HandleJwt(bearerString string, sensitive bool, sv *services.UserService, c context.Context) (*models.User, jwt.MapClaims, string, error) {
+func HandleJwt(bearerString, which string, sensitive bool, sv *services.UserService, c context.Context) (*models.User, jwt.MapClaims, string, error) {
 	if bearerString == "" {
 		return nil, nil, "", echo.NewHTTPError(http.StatusBadRequest, "Please provide a bearer token")
 	}
@@ -76,16 +76,16 @@ func HandleJwt(bearerString string, sensitive bool, sv *services.UserService, c 
 
 	token, err := VerifyJwt(words[1])
 	if err != nil {
-		return nil, nil, "", echo.NewHTTPError(http.StatusBadRequest, "Invalid JWT Token")
+		return nil, nil, "", echo.NewHTTPError(http.StatusUnauthorized, fmt.Sprintf("Invalid %s Token", which))
 	}
 
 	claims, ok := token.Claims.(jwt.MapClaims)
 	if !ok || !token.Valid {
-		return nil, nil, "", echo.NewHTTPError(http.StatusUnauthorized, "Invalid token claims")
+		return nil, nil, "", echo.NewHTTPError(http.StatusBadRequest, "Invalid token claims")
 	}
 
 	if claims["sensitive"] != sensitive {
-		return nil, nil, "", echo.NewHTTPError(http.StatusUnauthorized, "Wrong jwt token provided for login")
+		return nil, nil, "", echo.NewHTTPError(http.StatusBadRequest, "Wrong jwt token provided for login")
 	}
 
 	oid, err := primitive.ObjectIDFromHex(claims["_id"].(string))
@@ -98,7 +98,7 @@ func HandleJwt(bearerString string, sensitive bool, sv *services.UserService, c 
 		return nil, nil, "", err
 	}
 	if user == nil {
-		return nil, nil, "", echo.NewHTTPError(http.StatusUnauthorized, "User not found")
+		return nil, nil, "", echo.NewHTTPError(http.StatusBadRequest, "User not found")
 	}
 
 	return user, claims, words[1], nil

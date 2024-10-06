@@ -21,6 +21,8 @@ func RegisterUserRoutes(e *echo.Group, client *mongo.Client) {
 
 	e.Use(middlewares.AuthenticationMiddleware(userController, false))
 	e.Use(middlewares.TwofaMiddleware(userController, false))
+	e.DELETE("/logout", userController.Logout)
+	e.DELETE("/logout_all", userController.LogoutAll)
 
 	e.GET("/twofa_login", userController.TwofaLogin)
 	e.GET("/me", userController.GetMyDetails)

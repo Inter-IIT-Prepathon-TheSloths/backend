@@ -55,7 +55,7 @@ func (uc *UserController) Login(c echo.Context) error {
 
 	askForTwofa := existingUser.TwofaEnabled
 
-	return c.JSON(http.StatusBadRequest, map[string]string{
+	return c.JSON(http.StatusOK, map[string]string{
 		"message":      "Logged In",
 		"token":        jwt,
 		"refreshToken": refreshToken,

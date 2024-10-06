@@ -156,7 +156,7 @@ func (uc *UserController) VerifyVerificationCode(c echo.Context) error {
 		}
 
 		errToSend = c.JSON(http.StatusCreated, map[string]string{
-			"message": "User created successfully",
+			"message": "Signed up successfully",
 		})
 
 	} else {

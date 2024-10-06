@@ -111,7 +111,7 @@ func (uc *UserController) RefreshToken(c echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "Refresh token is required")
 	}
 
-	user, claims, refreshToken, err := utils.HandleJwt(bearerString, false, uc.service, c.Request().Context())
+	user, claims, refreshToken, err := utils.HandleJwt(bearerString, "Refresh", false, uc.service, c.Request().Context())
 	if err != nil {
 		return err
 	}
@@ -132,4 +132,25 @@ func (uc *UserController) RefreshToken(c echo.Context) error {
 		"message": "Token refreshed successfully",
 		"token":   jwt,
 	})
+}
+
+func (uc *UserController) Logout(c echo.Context) error {
+	id := c.Get("_id").(primitive.ObjectID)
+	refreshToken := c.Request().Header.Get("X-Refresh-Token")
+	if refreshToken == "" {
+		return echo.NewHTTPError(http.StatusUnauthorized, "Refresh token is required")
+	}
+
+	if err := uc.service.DeleteSession(c.Request().Context(), id, refreshToken); err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, map[string]string{"message": "Logged out successfully"})
+}
+
+func (uc *UserController) LogoutAll(c echo.Context) error {
+	id := c.Get("_id").(primitive.ObjectID)
+	if err := uc.service.DeleteAllSessions(c.Request().Context(), id); err != nil {
+		return err
+	}
+	return c.JSON(http.StatusOK, map[string]string{"message": "Logged out from all devices successfully"})
 }

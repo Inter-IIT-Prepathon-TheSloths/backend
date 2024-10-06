@@ -15,7 +15,7 @@ func (uc *UserController) Generate2faSecret(c echo.Context) error {
 	user := c.Get("user").(*models.User)
 
 	if user.TwofaEnabled {
-		return echo.NewHTTPError(http.StatusUnauthorized, "TwoFactor Authentication already enabled")
+		return echo.NewHTTPError(http.StatusForbidden, "TwoFactor Authentication already enabled")
 	}
 
 	key, err := utils.Generate2faKey(id.Hex())

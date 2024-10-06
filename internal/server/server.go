@@ -4,6 +4,7 @@ import (
 	"log"
 	"net/http"
 
+	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/controllers"
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/routes"
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/utils"
 	"github.com/labstack/echo/v4"
@@ -33,13 +34,20 @@ func NewServer(client *mongo.Client) *echo.Echo {
 	e.Use(middleware.Logger())
 	e.Use(middleware.Recover())
 
+	e.Use(middleware.GzipWithConfig(middleware.GzipConfig{
+		Level: 5,
+	}))
+
 	// Register user routes
 	e.GET("/", HealthCheck(client))
 
 	api := e.Group("/api/v1")
 	authRouter := api.Group("/auth")
+	analyticsRouter := api.Group("/analytics")
 
-	routes.RegisterUserRoutes(authRouter, client)
+	userController := controllers.NewUserController(client)
+	routes.RegisterUserRoutes(authRouter, client, userController)
+	routes.RegisterAnalyticsRoutes(analyticsRouter, client, userController)
 
 	e.HTTPErrorHandler = customHTTPErrorHandler
 

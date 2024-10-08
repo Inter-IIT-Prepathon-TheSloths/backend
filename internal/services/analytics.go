@@ -2,6 +2,7 @@ package services
 
 import (
 	"context"
+	"log"
 	"net/http"
 
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/config"
@@ -40,9 +41,9 @@ func (as *AnalyticsService) Create(ctx context.Context, analytics models.Analyti
 	return err
 }
 
-func (as *AnalyticsService) Get(ctx context.Context, user_id primitive.ObjectID, index string) (*models.Analytics, error) {
-	var analytics models.Analytics
-	err := as.getCollection().FindOne(ctx, bson.M{"user_id": user_id, "company_id": index}).Decode(&analytics)
+func (as *AnalyticsService) Get(ctx context.Context, filter bson.M) ([]models.Analytics, error) {
+	// var analytics models.Analytics
+	cur, err := as.getCollection().Find(ctx, filter)
 	if err == mongo.ErrNoDocuments {
 		return nil, nil
 	}
@@ -50,7 +51,20 @@ func (as *AnalyticsService) Get(ctx context.Context, user_id primitive.ObjectID,
 		return nil, err
 	}
 
-	return &analytics, nil
+	defer cur.Close(ctx)
+
+	var analyticsList []models.Analytics
+
+	for cur.Next(ctx) {
+		var analytics models.Analytics
+		err := cur.Decode(&analytics)
+		if err != nil {
+			log.Fatal(err)
+		}
+		analyticsList = append(analyticsList, analytics)
+	}
+
+	return analyticsList, nil
 }
 
 func (as *AnalyticsService) Delete(ctx context.Context, user_id primitive.ObjectID, company_id string) error {

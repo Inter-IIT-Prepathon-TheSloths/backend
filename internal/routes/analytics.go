@@ -13,6 +13,7 @@ func RegisterAnalyticsRoutes(e *echo.Group, client *mongo.Client, userController
 	e.Use(middlewares.AuthenticationMiddleware(userController, false))
 	e.Use(middlewares.TwofaMiddleware(userController, false))
 	e.GET("/companies", analyticsController.GetCompanies)
-	e.GET("/:index", analyticsController.GetAnalytics)
+	e.GET("/company/:index", analyticsController.GetAnalytics)
+	e.GET("/me", analyticsController.GetMyAnalytics)
 	// e.POST("/login", analyticsController.Login)
 }

@@ -11,6 +11,7 @@ import (
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/services"
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/utils"
 	"github.com/labstack/echo/v4"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
@@ -32,7 +33,7 @@ func (ac *AnalyticsController) GetCompanies(c echo.Context) error {
 func (ac *AnalyticsController) GetAnalytics(c echo.Context) error {
 	user_id := c.Get("_id").(primitive.ObjectID)
 	index := c.Param("index")
-	analytics, err := ac.service.Get(c.Request().Context(), user_id, index)
+	analytics, err := ac.service.Get(c.Request().Context(), bson.M{"user_id": user_id, "company_id": index})
 	if err != nil {
 		return err
 	}
@@ -74,10 +75,32 @@ func (ac *AnalyticsController) GetAnalytics(c echo.Context) error {
 		return c.JSON(http.StatusOK, result)
 	}
 
-	decompressedBody, err := utils.Decompress(analytics.Data)
+	decompressedBody, err := utils.Decompress(analytics[0].Data)
 	if err != nil {
 		return err
 	}
 
 	return c.JSON(http.StatusOK, decompressedBody)
+}
+
+func (ac *AnalyticsController) GetMyAnalytics(c echo.Context) error {
+	user_id := c.Get("_id").(primitive.ObjectID)
+	analytics, err := ac.service.Get(c.Request().Context(), bson.M{"user_id": user_id})
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(analytics)
+
+	var resultAnalytics []interface{}
+	for _, a := range analytics {
+		decompressedBody, err := utils.Decompress(a.Data)
+		if err != nil {
+			return err
+		}
+
+		resultAnalytics = append(resultAnalytics, decompressedBody)
+	}
+
+	return c.JSON(http.StatusOK, resultAnalytics)
 }

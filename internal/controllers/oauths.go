@@ -18,6 +18,7 @@ import (
 
 func (uc *UserController) AuthController(c echo.Context) error {
 	provider := c.Param("provider")
+	fmt.Println("There")
 	state, err := utils.GenerateState()
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, "Failed to generate state")

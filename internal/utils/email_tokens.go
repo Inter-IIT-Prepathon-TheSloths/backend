@@ -2,7 +2,6 @@ package utils
 
 import (
 	"encoding/base64"
-	"fmt"
 	"strings"
 )
 
@@ -16,8 +15,6 @@ func DecodeToken(token string) ([]string, error) {
 	if err != nil {
 		return []string{}, err
 	}
-	fmt.Println("Token", token)
-
 	decoded := string(decodedBytes)
 	parts := strings.Split(decoded, ":")
 	return parts, nil

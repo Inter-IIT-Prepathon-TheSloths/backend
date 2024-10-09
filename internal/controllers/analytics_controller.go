@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"strconv"
 
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/config"
 	"github.com/Inter-IIT-Prepathon-TheSloths/backend/internal/models"
@@ -33,6 +34,11 @@ func (ac *AnalyticsController) GetCompanies(c echo.Context) error {
 func (ac *AnalyticsController) GetAnalytics(c echo.Context) error {
 	user_id := c.Get("_id").(primitive.ObjectID)
 	index := c.Param("index")
+	number, err := strconv.Atoi(index)
+	if err != nil || (number <= 0 || number > 1000) {
+		return echo.NewHTTPError(http.StatusBadRequest, "Invalid index")
+	}
+
 	analytics, err := ac.service.Get(c.Request().Context(), bson.M{"user_id": user_id, "company_id": index})
 	if err != nil {
 		return err
@@ -89,8 +95,6 @@ func (ac *AnalyticsController) GetMyAnalytics(c echo.Context) error {
 	if err != nil {
 		return err
 	}
-
-	fmt.Println(analytics)
 
 	var resultAnalytics []interface{}
 	for _, a := range analytics {

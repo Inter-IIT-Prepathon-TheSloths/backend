@@ -90,6 +90,5 @@ func SendVerification(c echo.Context, sv *services.UserService, email, subject, 
 		return err
 	}
 
-	fmt.Println("Emaill", email)
 	return nil
 }
